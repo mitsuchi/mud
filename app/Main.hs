@@ -6,7 +6,7 @@ import Data.Void
 import Data.Char
 import Data.IORef
 import Data.List (find)
-import Data.Map as Map hiding (map, foldr)
+import Data.Map as Map hiding (map, foldr, take)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -52,10 +52,10 @@ data Expr
   | BinOp Op Expr Expr
   | Seq [Expr]
   | Assign Name Expr
-  | FunDef Name Param Expr
-  | Fun Param Expr Env
-  | Apply Expr Expr
-  | Case Expr [(Expr,Expr)]
+  | FunDef Name [Param] Expr
+  | Fun [Param] Expr Env
+  | Apply Expr [Expr]
+  | Case [Expr] [([Expr],Expr)]
   | Call Name [Expr]  
 
 instance Show Expr where
@@ -125,10 +125,10 @@ fundef = do
   rword "fun"
   name <- identifier
   symbol "="
-  args <- identifier
+  params <- some identifier
   symbol "->"
   body <- expr
-  return $ FunDef name args body
+  return $ FunDef name params body
 
 funDefCase :: Parser Expr
 funDefCase = do
@@ -139,22 +139,27 @@ funDefCase = do
   many newLine
   matches <- some matchExpr
   symbol "}"
-  return $ FunDef name "x" (Case (Var "x") matches) 
+  return $ FunDef name (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches) 
+    where 
+      paramNum matches = length (fst (head matches))
+      paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
+      varList n = map Var (paramList n)
 
-matchExpr :: Parser (Expr, Expr)
+matchExpr :: Parser ([Expr], Expr)
 matchExpr = do
-  cond <- arg
+  conds <- some arg
   symbol "->"
   body <- expr
   many newLine
-  return (cond, body)
+  return (conds, body)
 
 apply :: Parser Expr
 apply = do
   caller <- parens expr <|> (Var <$> identifier)
-  args <- arg
+  args <- some arg
   return $ Apply caller args
 
+type Dict = Map String Expr
 type Env = IORef (Map String Expr)
 
 eval :: Expr -> Env -> IO Expr
@@ -185,26 +190,39 @@ eval (Assign name expr) env = do
   return expr
 eval (FunDef name param body) env = do
   eval (Assign name (Fun param body env)) env  
-eval (Apply (Fun param body outerEnv) arg) env = do
+eval (Apply (Fun params body outerEnv) args) env = do
   varMap <- readIORef outerEnv
-  env' <- newIORef (Map.insert param arg varMap)
+  env' <- newIORef (newEnv params args varMap)
   eval body env'
-eval (Apply expr arg) env = do
+eval (Apply expr args) env = do
   expr' <- eval expr env
-  arg' <- eval arg env
-  eval (Apply expr' arg') env
-eval (Case e matchPairs) env = do
-  e' <- eval e env
-  case find (\pair -> matchCond e' (fst pair)) matchPairs of
-    Just pair -> eval (Apply (Fun (fromVar (fst pair)) (snd pair) env) e') env
+  args' <- mapM (\arg -> eval arg env) args
+  eval (Apply expr' args') env
+eval (Case es matchPairs) env = do
+  es' <- mapM (\e -> eval e env ) es
+  case find (\pair -> matchCond es' (fst pair)) matchPairs of
+    Just pair -> let (params, args) = paramsAndArgs (fst pair) es'
+                 in eval (Apply (Fun params (snd pair) env) args) env
     Nothing   -> error "condition no match"  
 
-fromVar :: Expr -> String
-fromVar (Var v) = v
+newEnv :: [Name] -> [Expr] -> Dict -> Dict
+newEnv params args outerEnv = foldMap (\p -> Map.insert (fst p) (snd p) outerEnv) (zip params args)
 
-matchCond :: Expr -> Expr -> Bool
-matchCond (IntLit i1) (IntLit i2) = (i1 == i2)
-matchCond (IntLit i1) (Var v) = True
+fromVars :: [Expr] -> [String]
+fromVars (Var v:[]) = [v]
+fromVars (Var v:es) = v : fromVars es
+fromVars (e:es) = fromVars es
+
+paramsAndArgs :: [Expr] -> [Expr] -> ([String], [Expr])
+paramsAndArgs [] [] = ([],[])
+paramsAndArgs (Var v:e1s) (e:e2s) = let rests = paramsAndArgs e1s e2s
+                                    in (v : (fst rests), e : (snd rests))
+paramsAndArgs (e1:e1s) (e2:e2s) = paramsAndArgs e1s e2s
+
+matchCond :: [Expr] -> [Expr] -> Bool
+matchCond (IntLit i:e1s) (IntLit j:e2s) = i == j && matchCond e1s e2s
+matchCond ((IntLit i):e1s) ((Var v):e2s) = matchCond e1s e2s
+matchCond [] [] = True
 
 pa :: String -> Either (ParseErrorBundle String Void) Expr
 pa program = parse expr "<stdin>" program
