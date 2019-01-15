@@ -56,7 +56,6 @@ data Expr
   | Fun [Param] Expr Env
   | Apply Expr [Expr]
   | Case [Expr] [([Expr],Expr)]
-  | Call Name [Expr]  
 
 instance Show Expr where
   show (IntLit i1) = show i1  
