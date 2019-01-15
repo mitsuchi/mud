@@ -121,6 +121,13 @@ exprNewLine = do
 newLine :: Parser String
 newLine = symbol "\n" <|> symbol ";"
 
+topLevel :: Parser Expr
+topLevel = do
+  sc
+  many newLine
+  exprs <- many exprNewLine
+  return $ Seq exprs
+
 fundef :: Parser Expr
 fundef = do
   rword "fun"
@@ -228,7 +235,7 @@ matchCond ((IntLit i):e1s) ((Var v):e2s) = matchCond e1s e2s
 matchCond [] [] = True
 
 pa :: String -> Either (ParseErrorBundle String Void) Expr
-pa program = parse expr "<stdin>" program
+pa program = parse topLevel "<stdin>" program
 
 ev :: String -> IO ()
 ev program = case pa program of
@@ -248,7 +255,7 @@ paf file = do
 main :: IO ()
 main = do
   input <- getContents
-  parseTest expr input
+  ev input
 
 runEval :: Expr -> IO ()
 runEval expr = do
