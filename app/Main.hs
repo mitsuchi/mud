@@ -73,12 +73,14 @@ data Op
   | Add
   | Sub
   | Eq
+  | Dot
   deriving (Show)
 
 ops :: [[Operator Parser Expr]]
 ops =
   [ 
-    [ InfixL (BinOp Mul <$ symbol "*")
+    [ InfixL (BinOp Dot <$ symbol ".") ]
+  , [ InfixL (BinOp Mul <$ symbol "*")
     , InfixL (BinOp Div <$ symbol "/") ]
   , [ InfixL (BinOp Add <$ symbol "+")
     , InfixL (BinOp Sub <$ symbol "-") ]
@@ -176,6 +178,8 @@ eval (BinOp Div (IntLit i1) (IntLit i2)) env = return $ IntLit (i1 `div` i2)
 eval (BinOp Eq (Var v) e) env = do
   e' <- eval e env
   eval (Assign v e') env  
+eval (BinOp Dot e1 (Var v)) env = eval (Apply (Var v) [e1]) env
+eval (BinOp Dot e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
 eval (BinOp op e1 e2) env = do
   e1' <- eval e1 env
   e2' <- eval e2 env

@@ -1,0 +1,8 @@
+{
+  fun inc = x -> x + 1
+  10.inc
+  
+  fun add = x y -> x + y
+  1.add 2
+  1.add 2.add 3
+}
