@@ -48,6 +48,7 @@ module Lib where
   
   data Expr
     = IntLit Integer
+    | StrLit String
     | Var Name
     | BinOp Op Expr Expr
     | Seq [Expr]
@@ -59,6 +60,7 @@ module Lib where
   
   instance Show Expr where
     show (IntLit i1) = show i1  
+    show (StrLit str) = str
     show (Var name) = name
     show (BinOp op e1 e2) = show e1 ++ " " ++ show op ++ " " ++ show e2
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
@@ -95,6 +97,7 @@ module Lib where
   
   arg :: Parser Expr
   arg = IntLit <$> integer
+    <|> strLit
     <|> Var <$> identifier
     <|> parens expr
     <|> seqExpr
@@ -103,6 +106,13 @@ module Lib where
   
   parens :: Parser a -> Parser a
   parens = between (symbol "(") (symbol ")")
+
+  strLit :: Parser Expr
+  strLit = do
+    char '\''
+    str <- many $ noneOf "\'"
+    char '\''
+    return $ StrLit str
   
   seqExpr :: Parser Expr
   seqExpr = do
@@ -172,12 +182,14 @@ module Lib where
   
   eval :: Expr -> Env -> IO Expr
   eval (IntLit i) env = return $ IntLit i
+  eval (StrLit s) env = return $ StrLit s
   eval (Var name) env = do
     varMap <- readIORef env
     case Map.lookup name varMap of
       Just x -> return x
       Nothing -> error ("'" ++ name ++ "' not found")
   eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
+  eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
   eval (BinOp Sub (IntLit i1) (IntLit i2)) env = return $ IntLit (i1-i2)
   eval (BinOp Mul (IntLit i1) (IntLit i2)) env = return $ IntLit (i1*i2)
   eval (BinOp Div (IntLit i1) (IntLit i2)) env = return $ IntLit (i1 `div` i2)

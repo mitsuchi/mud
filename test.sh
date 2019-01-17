@@ -26,5 +26,7 @@ try 11 "{fun inc = n -> n + 1; 10.inc}"
 try 3 "{fun add = x y -> x + y; add 1 2}"
 try 3 "{fun add = x y -> x + y; 1.add 2}"
 try 6 "{fun add = x y -> x + y; 1.add 2.add 3}"
+try "hello" "'hello'"
+try "hello world" "'hello'+' world'"
 
 echo OK
