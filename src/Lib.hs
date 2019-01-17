@@ -192,6 +192,7 @@ module Lib where
   eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
   eval (BinOp Sub (IntLit i1) (IntLit i2)) env = return $ IntLit (i1-i2)
   eval (BinOp Mul (IntLit i1) (IntLit i2)) env = return $ IntLit (i1*i2)
+  eval (BinOp Mul (StrLit s) (IntLit i)) env = return (StrLit $ (concatMap (\i -> s) [1..i]))
   eval (BinOp Div (IntLit i1) (IntLit i2)) env = return $ IntLit (i1 `div` i2)
   eval (BinOp Eq (Var v) e) env = do
     e' <- eval e env

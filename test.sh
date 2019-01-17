@@ -28,5 +28,6 @@ try 3 "{fun add = x y -> x + y; 1.add 2}"
 try 6 "{fun add = x y -> x + y; 1.add 2.add 3}"
 try "hello" "'hello'"
 try "hello world" "'hello'+' world'"
+try "hellohellohello" "'hello'*3"
 
 echo OK
