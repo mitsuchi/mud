@@ -5,8 +5,9 @@ module Lib where
   import Data.Void
   import Data.Char
   import Data.IORef
-  import Data.List (find)
+  import Data.List (find, intercalate)
   import Data.Map as Map hiding (map, foldr, take)
+  import Debug.Trace
   import Text.Megaparsec
   import Text.Megaparsec.Char
   import qualified Text.Megaparsec.Char.Lexer as L
@@ -45,7 +46,8 @@ module Lib where
   
   type Name = String
   type Param = String
-  
+  type Type = String
+
   data Expr
     = IntLit Integer
     | StrLit String
@@ -53,10 +55,10 @@ module Lib where
     | BinOp Op Expr Expr
     | Seq [Expr]
     | Assign Name Expr
-    | FunDef Name [Param] Expr
-    | Fun [Param] Expr Env
+    | FunDef Name [Type] [Param] Expr
+    | Fun [Type] [Param] Expr Env
     | Apply Expr [Expr]
-    | Case [Expr] [([Expr],Expr)]
+    | Case [Expr] [([Expr],Expr)] [Type]
   
   instance Show Expr where
     show (IntLit i1) = show i1  
@@ -64,9 +66,9 @@ module Lib where
     show (Var name) = name
     show (BinOp op e1 e2) = show e1 ++ " " ++ show op ++ " " ++ show e2
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
-    show (Fun param body env) = "function"
-    show (FunDef name param body) = name
-    show (Apply e1 e2) = "application"
+    show (Fun types params body env) = "function : " ++ (show types)
+    show (FunDef name types params body) = name
+    show (Apply e1 e2) = "application : " ++ show (e1) ++ " on " ++ show (e2)
   
   data Op
     = Mul
@@ -110,8 +112,8 @@ module Lib where
   strLit :: Parser Expr
   strLit = do
     char '\''
-    str <- many $ noneOf "\'"
-    char '\''
+    str <- many $ noneOf "'"
+    symbol "'"
     return $ StrLit str
   
   seqExpr :: Parser Expr
@@ -142,22 +144,26 @@ module Lib where
   fundef = do
     rword "fun"
     name <- identifier
+    symbol ":"
+    types <- sepBy1 identifier (symbol "->")
     symbol "="
     params <- some identifier
     symbol "->"
     body <- expr
-    return $ FunDef name params body
+    return $ FunDef name types params body
   
   funDefCase :: Parser Expr
   funDefCase = do
     rword "fun"
     name <- identifier
+    symbol ":"
+    types <- sepBy1 identifier (symbol "->")
     symbol "="
     symbol "{"
     many newLine
     matches <- some matchExpr
     symbol "}"
-    return $ FunDef name (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches) 
+    return $ FunDef name types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types) 
       where 
         paramNum matches = length (fst (head matches))
         paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
@@ -207,27 +213,45 @@ module Lib where
   eval (Seq (e:es)) env = do
     eval e env
     eval (Seq es) env
+  eval (Assign name fun@(Fun types params expr outerEnv)) env = do
+    varMap <- readIORef env
+    writeIORef env (Map.insert (nt2s name (init types)) fun varMap)
+    return expr
   eval (Assign name expr) env = do
     varMap <- readIORef env
     writeIORef env (Map.insert name expr varMap)
     return expr
-  eval (FunDef name param body) env = do
-    eval (Assign name (Fun param body env)) env  
-  eval (Apply (Fun params body outerEnv) args) env = do
+  eval (FunDef name types params body) env = do
+    eval (Assign name (Fun types params body env)) env  
+  eval (Apply (Fun types params body outerEnv) args) env = do
     varMap <- readIORef outerEnv
     env' <- newIORef (newEnv params args varMap)
     eval body env'
+  eval (Apply (Var name) args) env = do
+    args' <- mapM (\arg -> eval arg env) args
+    varMap <- readIORef env
+    fun <- case Map.lookup (nt2s name (map typeOf args')) varMap of
+      Just x -> return x
+      Nothing -> error ("'" ++ (nt2s name (map typeOf args')) ++ "' not found")    
+    eval (Apply fun args') env
   eval (Apply expr args) env = do
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
     eval (Apply expr' args') env
-  eval (Case es matchPairs) env = do
+  eval (Case es matchPairs types) env = do
     es' <- mapM (\e -> eval e env ) es
     case find (\pair -> matchCond es' (fst pair)) matchPairs of
       Just pair -> let (params, args) = paramsAndArgs (fst pair) es'
-                   in eval (Apply (Fun params (snd pair) env) args) env
+                   in eval (Apply (Fun types params (snd pair) env) args) env
       Nothing   -> error "condition no match"  
   
+  typeOf :: Expr -> String
+  typeOf (IntLit i) = "Int"
+  typeOf (StrLit s) = "String"
+
+  nt2s :: Name -> [Type] -> String
+  nt2s name types = name ++ ":" ++ (intercalate "->" types)
+
   newEnv :: [Name] -> [Expr] -> Dict -> Dict
   newEnv params args outerEnv = foldMap (\p -> Map.insert (fst p) (snd p) outerEnv) (zip params args)
   
