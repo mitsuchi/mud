@@ -33,5 +33,8 @@ try 3 "fun add : Int -> Int -> Int = x y -> x + y; fun add : String -> String ->
 try "ab" "fun add : Int -> Int -> Int = x y -> x + y; fun add : String -> String -> String = x y -> x + y; 'a'+'b'"
 try 40 "fun double : Int -> Int = x -> x + x; fun twice : (Int->Int)->Int->Int = f x -> f (f x); twice (double:Int->Int) 10"
 try "a a a a" "fun double : Int -> Int = x -> x + x; fun double : String -> String = x ->x + ' ' + x; fun twice : (String->String)->String->String = f x -> f (f x); twice (double:String->String) 'a'"
+try "10" "fun id : a -> a = x -> x; id 10;"
+try "hoge" "fun id : a -> a = x -> x; id 'hoge';"
+try 40 "fun double : Int -> Int = x -> x + x; fun twice : (a->a)->a->a = f x -> f (f x); twice (double:Int->Int) 10"
 
 echo OK

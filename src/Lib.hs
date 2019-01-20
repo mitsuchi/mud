@@ -229,8 +229,7 @@ module Lib where
     eval (Seq es) env
   eval (Assign name fun@(Fun types params expr outerEnv)) env = do
     varMap <- readIORef env
-    --writeIORef env (Map.insert (nt2s name (init (listify types))) fun varMap)
-    writeIORef env (Map.insert (typeSigToKey (TypeSig types (Var name))) fun varMap)
+    writeIORef env (Map.insert (typeSigToKey (TypeSig (generalizeTypeSig types) (Var name))) fun varMap)
     return expr
   eval (Assign name expr) env = do
     varMap <- readIORef env
@@ -247,7 +246,9 @@ module Lib where
     varMap <- readIORef env
     fun <- case Map.lookup (nt2s name (map typeOf args')) varMap of
       Just x -> return x
-      Nothing -> error ("'" ++ (nt2s name (map typeOf args')) ++ "' not found")    
+      Nothing -> case Map.lookup (name ++ ":" ++ (toTypeSigString (generalizeTypeSig' (Plain (map typeOf' args'))))) varMap of
+        Just x -> return x
+        Nothing -> error ("'" ++ (nt2s name (map typeOf args')) ++ "' not found. and '" ++ (name ++ ":" ++ (toTypeSigString (generalizeTypeSig' (Plain (map typeOf' args'))))) ++ "' not found too. env = " ++ (show varMap))
     eval (Apply fun args') env
   eval (Apply expr args) env = do
     expr' <- eval expr env
@@ -270,6 +271,12 @@ module Lib where
   typeOf (TypeSig sig _) = toTypeSigString sig
   typeOf (Fun sig _ _ _) = toTypeSigString sig
 
+  typeOf' :: Expr -> DeepList String
+  typeOf' (IntLit i) = Elem "Int"
+  typeOf' (StrLit s) = Elem "String"
+  typeOf' (TypeSig sig _) = sig
+  typeOf' (Fun sig _ _ _) = sig
+
   nt2s :: Name -> [Type] -> String
   nt2s name types = name ++ ":" ++ (intercalate "->" (map addParen types))
 
@@ -277,7 +284,6 @@ module Lib where
   addParen s = if (isInfixOf "->" s) then "(" ++ s ++ ")" else s
 
   newEnv :: [Name] -> [Expr] -> Dict -> Dict
-  --newEnv params args outerEnv = foldMap (\p -> Map.insert (fst p) (snd p) outerEnv) (zip params args)
   newEnv params args outerEnv = foldMap (\p -> Map.insert (fst' p) (snd p) outerEnv) (zip params args)
   
   fst' :: (String, Expr) -> String
@@ -345,3 +351,46 @@ module Lib where
 
   typeSigToKey :: Expr -> String
   typeSigToKey (TypeSig sig (Var v)) = v ++ ":" ++ (toTypeSigString (dInit sig))
+
+  --generalize :: DeepList String -> DeepList String
+  --generalize list = gnrlz' list Map.empty 0
+
+  -- gnrlz' :: DeepList String -> Map String Int -> Int -> DeepList String
+  -- gnrlz' (Plain []) table num = Plain []
+  -- gnrlz' (Plain ((Elem e):es)) table num = case Map.lookup e table of
+  --   Nothing -> dAppend (Elem ("t" ++ (show num))) (gnrlz' (Plain es) (Map.insert e num table) (num+1))
+  --   Just i  -> dAppend (Elem ("t" ++ (show i))) (gnrlz' (Plain es) table num)
+
+  makeMap :: [String] -> Map String Int
+  makeMap list = makeMap' list 0 Map.empty
+
+  makeMap' :: [String] -> Int -> Map String Int -> Map String Int
+  makeMap' [] num table = table
+  makeMap' (e:es) num table = if isUpper(e !! 0) then (makeMap' es num table) else 
+    case Map.lookup e table of
+      Nothing -> makeMap' es (num+1) (Map.insert e num table)
+      Just i  -> makeMap' es num table
+  
+  generalizeTypeSig :: DeepList String -> DeepList String
+  generalizeTypeSig list = gnrlize' list (makeMap (dFlatten list))
+
+  gnrlize' :: DeepList String -> Map String Int -> DeepList String
+  gnrlize' (Elem e) table = case Map.lookup e table of
+    Nothing -> Elem e
+    Just i -> Elem ("t" ++ show i)
+  gnrlize' (Plain []) table = Plain []
+  gnrlize' (Plain (e:es)) table = 
+    let (Plain rest') = (gnrlize' (Plain es) table)
+    in Plain ((gnrlize' e table) : rest')
+
+  generalizeTypeSig' :: DeepList String -> DeepList String
+  generalizeTypeSig' list = gnrlize' list (makeMap'' (dFlatten list))
+
+  makeMap'' :: [String] -> Map String Int
+  makeMap'' list = makeMap3 list 0 Map.empty
+
+  makeMap3 :: [String] -> Int -> Map String Int -> Map String Int
+  makeMap3 [] num table = table
+  makeMap3 (e:es) num table = case Map.lookup e table of
+    Nothing -> makeMap3 es (num+1) (Map.insert e num table)
+    Just i  -> makeMap3 es num table

@@ -31,4 +31,12 @@ module DeepList where
   listify (Elem x) = [x]
   listify (Plain xs) = map dArrow xs
 
+  dAppend :: DeepList a -> DeepList a -> DeepList a
+  dAppend (Elem e) (Plain []) = Plain [Elem e]
+  dAppend (Elem e) (Plain es) = Plain ((Elem e):es)
+  dAppend (Plain es1) (Plain es2) = Plain (es1++es2)
 
+  dFlatten :: DeepList a -> [a]
+  dFlatten (Elem e) = [e]
+  dFlatten (Plain []) = []
+  dFlatten (Plain (e:es)) = (dFlatten e) ++ (dFlatten (Plain es))
