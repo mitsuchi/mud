@@ -31,5 +31,7 @@ try "hello world" "'hello'+' world'"
 try "hellohellohello" "'hello'*3"
 try 3 "fun add : Int -> Int -> Int = x y -> x + y; fun add : String -> String -> String = x y -> x + y; 1+2"
 try "ab" "fun add : Int -> Int -> Int = x y -> x + y; fun add : String -> String -> String = x y -> x + y; 'a'+'b'"
+try 40 "fun double : Int -> Int = x -> x + x; fun twice : (Int->Int)->Int->Int = f x -> f (f x); twice (double:Int->Int) 10"
+try "a a a a" "fun double : Int -> Int = x -> x + x; fun double : String -> String = x ->x + ' ' + x; fun twice : (String->String)->String->String = f x -> f (f x); twice (double:String->String) 'a'"
 
 echo OK
