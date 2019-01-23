@@ -40,3 +40,9 @@ module DeepList where
   dFlatten (Elem e) = [e]
   dFlatten (Plain []) = []
   dFlatten (Plain (e:es)) = (dFlatten e) ++ (dFlatten (Plain es))
+
+  instance (Eq a) => Eq (DeepList a) where
+    (Elem x) == (Elem y) = (x == y)
+    (Elem x) == (Plain y) = False
+    (Plain x) == (Elem y) = False
+    (Plain x) == (Plain y) = (x == y)
