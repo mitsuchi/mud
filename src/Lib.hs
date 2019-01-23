@@ -203,8 +203,9 @@ module Lib where
   eval (StrLit s) env = return $ StrLit s
   eval (Var name) env = do
     var <- lookupVar name env
+    env' <- readIORef env
     case var of
-      Nothing -> error ("'" ++ name ++ "' not found")
+      Nothing -> error ("'" ++ name ++ "' not found, env = " ++ (show env'))
       Just x -> return x
   eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
   eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
