@@ -13,9 +13,38 @@ module Lib where
   import qualified Text.Megaparsec.Char.Lexer as L
   
   import DeepList
+  import TypeUtil
 
   type Parser = Parsec Void String
+  type Name = String
+  type Param = String
+  type Type = String
+  type Env = IORef (Map Name [(DeepList Type, Expr)])
   
+  data Expr
+    = IntLit Integer
+    | StrLit String
+    | Var Name
+    | BinOp Op Expr Expr
+    | Seq [Expr]
+    | Assign Name Expr
+    | FunDef Name (DeepList Type) [Param] Expr
+    | Fun (DeepList Type) [Param] Expr Env
+    | Apply Expr [Expr]
+    | Case [Expr] [([Expr],Expr)] (DeepList Type)
+    | TypeSig (DeepList Type) Expr
+
+  data Op
+    = Mul
+    | Div
+    | Add
+    | Sub
+    | Eq
+    | Dot
+    | RArrow
+    | Colon
+    deriving (Show)
+
   sc :: Parser ()
   sc = L.space spaceOrTab1 lineCmnt blockCmnt
     where
@@ -46,23 +75,6 @@ module Lib where
   symbol :: String -> Parser String
   symbol = L.symbol sc
   
-  type Name = String
-  type Param = String
-  type Type = String
-
-  data Expr
-    = IntLit Integer
-    | StrLit String
-    | Var Name
-    | BinOp Op Expr Expr
-    | Seq [Expr]
-    | Assign Name Expr
-    | FunDef Name (DeepList Type) [Param] Expr
-    | Fun (DeepList Type) [Param] Expr Env
-    | Apply Expr [Expr]
-    | Case [Expr] [([Expr],Expr)] (DeepList Type)
-    | TypeSig (DeepList Type) Expr
-  
   instance Show Expr where
     show (IntLit i1) = show i1  
     show (StrLit str) = str
@@ -73,17 +85,6 @@ module Lib where
     show (FunDef name types params body) = name
     show (Apply e1 e2) = "application : " ++ show (e1) ++ " on " ++ show (e2)
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
-
-  data Op
-    = Mul
-    | Div
-    | Add
-    | Sub
-    | Eq
-    | Dot
-    | RArrow
-    | Colon
-    deriving (Show)
   
   ops :: [[Operator Parser Expr]]
   ops =
@@ -197,17 +198,14 @@ module Lib where
     args <- some arg
     return $ Apply caller args
   
-  type Dict = Map String Expr
-  type Env = IORef (Map String Expr)
-  
   eval :: Expr -> Env -> IO Expr
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
   eval (Var name) env = do
-    varMap <- readIORef env
-    case Map.lookup name varMap of
-      Just x -> return x
+    var <- lookupVar name env
+    case var of
       Nothing -> error ("'" ++ name ++ "' not found")
+      Just x -> return x
   eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
   eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
   eval (BinOp Sub (IntLit i1) (IntLit i2)) env = return $ IntLit (i1-i2)
@@ -228,28 +226,28 @@ module Lib where
     eval e env
     eval (Seq es) env
   eval (Assign name fun@(Fun types params expr outerEnv)) env = do
-    varMap <- readIORef env
-    writeIORef env (Map.insert (typeSigToKey (TypeSig (generalizeTypeSig types) (Var name))) fun varMap)
-    return expr
+    res <- insertFun name types fun env
+    case res of
+      Left message -> error message
+      Right env -> return expr
   eval (Assign name expr) env = do
-    varMap <- readIORef env
-    writeIORef env (Map.insert name expr varMap)
-    return expr
+    res <- insertVar name expr env
+    case res of
+      Left message -> error message
+      Right env -> return expr
   eval (FunDef name types params body) env = do
     eval (Assign name (Fun types params body env)) env  
   eval (Apply (Fun types params body outerEnv) args) env = do
     varMap <- readIORef outerEnv
-    env' <- newIORef (newEnv params args varMap)
+    env' <- newEnv params args varMap
     eval body env'
+
   eval (Apply (Var name) args) env = do
     args' <- mapM (\arg -> eval arg env) args
-    varMap <- readIORef env
-    fun <- case Map.lookup (nt2s name (map typeOf args')) varMap of
-      Just x -> return x
-      Nothing -> case Map.lookup (name ++ ":" ++ (toTypeSigString (generalizeTypeSig' (Plain (map typeOf' args'))))) varMap of
-        Just x -> return x
-        Nothing -> error ("'" ++ (nt2s name (map typeOf args')) ++ "' not found. and '" ++ (name ++ ":" ++ (toTypeSigString (generalizeTypeSig' (Plain (map typeOf' args'))))) ++ "' not found too. env = " ++ (show varMap))
-    eval (Apply fun args') env
+    fun' <- lookupFun name (Plain (map typeOf' args')) env
+    case fun' of
+      Just fun -> eval (Apply fun args') env
+      Nothing -> error (name ++ " not found")
   eval (Apply expr args) env = do
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
@@ -261,15 +259,11 @@ module Lib where
                    in eval (Apply (Fun types params (snd pair) env) args) env
       Nothing   -> error "condition no match"
   eval expr@(TypeSig sig (Var name)) env = do
-    name' <- return $ typeSigToKey expr
-    eval (Var name') env
+    fun' <- lookupFun name sig env
+    case fun' of
+      Just fun -> return fun
+      Nothing -> error (name ++ " not found")
   eval (TypeSig sig expr) env = eval expr env
-
-  typeOf :: Expr -> String
-  typeOf (IntLit i) = "Int"
-  typeOf (StrLit s) = "String"
-  typeOf (TypeSig sig _) = toTypeSigString sig
-  typeOf (Fun sig _ _ _) = toTypeSigString sig
 
   typeOf' :: Expr -> DeepList String
   typeOf' (IntLit i) = Elem "Int"
@@ -277,19 +271,16 @@ module Lib where
   typeOf' (TypeSig sig _) = sig
   typeOf' (Fun sig _ _ _) = sig
 
-  nt2s :: Name -> [Type] -> String
-  nt2s name types = name ++ ":" ++ (intercalate "->" (map addParen types))
+  newEnv :: [Name] -> [Expr] -> (Map Name [(DeepList Type, Expr)]) -> IO Env
+  newEnv params args outerEnv = do
+    env <- newIORef outerEnv
+    mapM_ (\p -> insertAny p env) (zip params args)
+    return env
 
-  addParen :: String -> String
-  addParen s = if (isInfixOf "->" s) then "(" ++ s ++ ")" else s
-
-  newEnv :: [Name] -> [Expr] -> Dict -> Dict
-  newEnv params args outerEnv = foldMap (\p -> Map.insert (fst' p) (snd p) outerEnv) (zip params args)
-  
-  fst' :: (String, Expr) -> String
-  fst' (s, e) = case e of
-    (Fun sig _ _ _) -> s ++ ":" ++ (toTypeSigString (dInit sig))
-    otherwise       -> s
+  insertAny :: (Name, Expr) -> Env -> IO (Either String Env)
+  insertAny (name, expr) env = case expr of
+    (Fun types _ _ _) -> insertFun name types expr env
+    otherwise         -> insertVar name expr env
 
   fromVars :: [Expr] -> [String]
   fromVars (Var v:[]) = [v]
@@ -345,22 +336,6 @@ module Lib where
   typeTerm :: Parser (DeepList String)
   typeTerm = (Elem <$> identifier) <|> parens typeList
 
-  toTypeSigString :: DeepList String -> String
-  toTypeSigString (Elem x) = x
-  toTypeSigString (Plain xs) = intercalate "->" (map dArrow xs)
-
-  typeSigToKey :: Expr -> String
-  typeSigToKey (TypeSig sig (Var v)) = v ++ ":" ++ (toTypeSigString (dInit sig))
-
-  --generalize :: DeepList String -> DeepList String
-  --generalize list = gnrlz' list Map.empty 0
-
-  -- gnrlz' :: DeepList String -> Map String Int -> Int -> DeepList String
-  -- gnrlz' (Plain []) table num = Plain []
-  -- gnrlz' (Plain ((Elem e):es)) table num = case Map.lookup e table of
-  --   Nothing -> dAppend (Elem ("t" ++ (show num))) (gnrlz' (Plain es) (Map.insert e num table) (num+1))
-  --   Just i  -> dAppend (Elem ("t" ++ (show i))) (gnrlz' (Plain es) table num)
-
   makeMap :: [String] -> Map String Int
   makeMap list = makeMap' list 0 Map.empty
 
@@ -383,14 +358,94 @@ module Lib where
     let (Plain rest') = (gnrlize' (Plain es) table)
     in Plain ((gnrlize' e table) : rest')
 
-  generalizeTypeSig' :: DeepList String -> DeepList String
-  generalizeTypeSig' list = gnrlize' list (makeMap'' (dFlatten list))
+  -- 変数を環境に登録する
+  -- 同名の変数も関数もない場合のみ登録できる
+  insertVar :: Name -> Expr -> Env -> IO (Either String Env)
+  insertVar name expr env = do
+    e <- anyExists name env
+    if not e
+    then do
+      env' <- readIORef env
+      writeIORef env (Map.insert name [(Elem "_", expr)] env')
+      return $ Right env
+    else return $ Left (name ++ " already exists")
+  
+  varExists :: Name -> Env -> IO Bool
+  varExists name env = do
+    exists <- lookupVar name env
+    case exists of
+      Nothing -> return False
+      otherwise -> return True
+  
+  lookupVar :: Name -> Env -> IO (Maybe Expr)
+  lookupVar name env = do
+    env' <- readIORef env
+    case Map.lookup name env' of
+      Nothing -> return Nothing
+      Just vars -> case vars of
+        (Elem "_", expr):[] -> return $ Just expr
+        otherwise -> return Nothing
 
-  makeMap'' :: [String] -> Map String Int
-  makeMap'' list = makeMap3 list 0 Map.empty
+  anyExists :: Name -> Env -> IO Bool
+  anyExists name env = do
+    env' <- readIORef env
+    case Map.lookup name env' of
+      Nothing -> return False
+      Just vars -> return True
 
-  makeMap3 :: [String] -> Int -> Map String Int -> Map String Int
-  makeMap3 [] num table = table
-  makeMap3 (e:es) num table = case Map.lookup e table of
-    Nothing -> makeMap3 es (num+1) (Map.insert e num table)
-    Just i  -> makeMap3 es num table
+  showEnv :: Env -> IO ()
+  showEnv env = do
+    env' <- readIORef env
+    print env'
+
+  showResult :: Either String Env -> IO ()
+  showResult res = case res of
+    Left message -> print message
+    Right env -> showEnv env
+
+  -- 関数を環境に登録する
+  -- 同名の変数も、同型の関数もない場合のみ登録できる
+  -- ただし、同名の関数がある場合はその定義の末尾に追加する
+  insertFun :: Name -> DeepList Type -> Expr -> Env -> IO (Either String Env)      
+  insertFun name types expr env = do
+    ve <- varExists name env
+    fe <- funExists name types env
+    if not ve && not fe
+    then do
+      insertFun' name (generalizeTypeSig types) expr env
+      return $ Right env
+    else
+      return $ Left (name ++ " already exists"  )
+
+  insertFun' :: Name -> DeepList Type -> Expr -> Env -> IO Env
+  insertFun' name types expr env = do
+    env' <- readIORef env
+    funs' <- case Map.lookup name env' of
+      Nothing -> return []
+      Just funs -> return funs
+    writeIORef env (Map.insert name (funs' ++ [(generalizeTypeSig types, expr)]) env')
+    return env
+
+  funExists :: Name -> DeepList Type -> Env -> IO Bool
+  funExists name types env = do
+    fun <- lookupFun name types env
+    case fun of
+      Nothing -> return $ False
+      Just expr -> return $ True
+
+  lookupFun :: Name -> DeepList Type -> Env -> IO (Maybe Expr)
+  lookupFun name types env = do
+    env' <- readIORef env
+    case Map.lookup name env' of
+      Nothing -> return Nothing
+      Just funs -> case funs of
+        (Elem "_", expr):[] -> return Nothing
+        otherwise -> case firstMatch (generalizeTypeSig types) funs of
+          Nothing -> return Nothing
+          Just fun -> return $ Just fun
+
+  firstMatch :: DeepList Type -> [(DeepList Type, Expr)] -> Maybe Expr
+  firstMatch types [] = Nothing
+  firstMatch types ((types', expr):es) = case findTypeEnv types' types Map.empty of
+    Nothing -> firstMatch types es
+    Just env -> Just expr    
