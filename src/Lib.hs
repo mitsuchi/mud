@@ -202,7 +202,7 @@ module Lib where
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
   eval (Var name) env = do
-    var <- lookupVar name env
+    var <- lookupVarLoose name env
     env' <- readIORef env
     case var of
       Nothing -> error ("'" ++ name ++ "' not found, env = " ++ (show env'))
@@ -377,15 +377,22 @@ module Lib where
     case exists of
       Nothing -> return False
       otherwise -> return True
-  
+
   lookupVar :: Name -> Env -> IO (Maybe Expr)
-  lookupVar name env = do
+  lookupVar name env = lookupVar' name env False
+
+  lookupVarLoose :: Name -> Env -> IO (Maybe Expr)
+  lookupVarLoose name env = lookupVar' name env True
+
+  lookupVar' :: Name -> Env -> Bool -> IO (Maybe Expr)
+  lookupVar' name env loose = do
     env' <- readIORef env
     case Map.lookup name env' of
       Nothing -> return Nothing
       Just vars -> case vars of
         (Elem "_", expr):[] -> return $ Just expr
-        otherwise -> return Nothing
+        -- 変数として名前がなくても関数として1つだけ名前があるならそれを参照する
+        (Plain _, expr):[] -> return $ if loose then Just expr else Nothing
 
   anyExists :: Name -> Env -> IO Bool
   anyExists name env = do

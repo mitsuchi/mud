@@ -36,5 +36,8 @@ try "a a a a" "fun double : Int -> Int = x -> x + x; fun double : String -> Stri
 try "10" "fun id : a -> a = x -> x; id 10;"
 try "hoge" "fun id : a -> a = x -> x; id 'hoge';"
 try 40 "fun double : Int -> Int = x -> x + x; fun twice : (a->a)->a->a = f x -> f (f x); twice (double:Int->Int) 10"
-
+try 40 "fun double : Int -> Int = x -> x + x; fun twice : (Int->Int)->Int->Int = f x -> f (f x); twice double 10"
+try 10 "fun id : a -> a = x -> x; (id id) 10"
+try "aaaa" "fun double : a -> a = x -> x + x; fun twice : (a->a)->a->a = f x -> f (f x); twice double 'a'"
+try 40 "fun comp : (b->c) -> (a->b) -> a -> c = f g x -> f (g x); fun double : a->a = x -> x + x; comp double double 10"
 echo OK
