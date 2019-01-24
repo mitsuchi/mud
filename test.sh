@@ -53,5 +53,17 @@ try 3 "fun ** : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c); fun i
 try 5 "fun length : [a] -> Int = { [] -> 0; es -> 1 + length (tail es) }; length [4,5,6,7,8]"
 try "[2,4,6]" "fun map : [a] -> (a->a) -> [a] = { [] f -> []; es f -> [f (head es)] + (map (tail es) f)}; map [1,2,3] (x -> x + x : Int -> Int)"
 try "[4,3,2,1]" "fun reverse : [a] -> [a] = { [] -> []; es -> (reverse (tail es)) + [head es] }; reverse [1,2,3,4]"
+try "True" "True && True"
+try "False" "True && False"
+try "True" "True || True"
+try "True" "True || False"
+try "True" "True + True"
+try "False" "True * False"
+try "True" "1 < 2"
+try "False" "1 == 2"
+try "True" "1 == 1"
+try "True" "[1,2] == [1,2]"
+try "False" "1 > 2"
+try "False" "(1 > 2) && (3 == 3)"
 
 echo OK

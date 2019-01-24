@@ -35,6 +35,7 @@ module Lib where
     | Case [Expr] [([Expr],Expr)] (DeepList Type)
     | TypeSig (DeepList Type) Expr
     | ListLit [Expr]
+    | BoolLit Bool
 
   data Op
     = Mul
@@ -46,6 +47,13 @@ module Lib where
     | RArrow
     | Colon
     | OpLit String
+    | Equal
+    | And
+    | Or
+    | Ltq
+    | Gtq
+    | Lt
+    | Gt
     deriving (Show)
 
   sc :: Parser ()
@@ -93,10 +101,12 @@ module Lib where
     show (Apply e1 e2) = "application : " ++ show (e1) ++ " on " ++ show (e2)
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
     show (ListLit exprs) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
+    show (BoolLit b) = show b
 
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
     (StrLit s1) == (StrLit s2) = s1 == s2
+    (ListLit l1) == (ListLit l2) = l1 == l2
 
   ops :: [[Operator Parser Expr]]
   ops =
@@ -108,6 +118,13 @@ module Lib where
       , InfixL (BinOp Div <$ symbol "/") ]
     , [ InfixL (BinOp Add <$ symbol "+")
       , InfixL (BinOp Sub <$ symbol "-") ]
+    , [ InfixL (BinOp Ltq <$ symbol "<=")
+      , InfixL (BinOp Gtq <$ symbol "=>")
+      , InfixL (BinOp Lt <$ symbol "<")
+      , InfixL (BinOp Gt <$ symbol ">") ]
+    , [ InfixL (BinOp And <$ symbol "&&") ]
+    , [ InfixL (BinOp Or <$ symbol "||") ]
+    , [ InfixR (BinOp Equal <$ symbol "==") ]
     , [ InfixR (BinOp Eq <$ symbol "=") ]
     ]
   
@@ -243,6 +260,8 @@ module Lib where
   eval (ListLit es) env = do
     es' <- mapM (\e -> eval e env) es
     return $ ListLit es'
+  eval (Var "True") env = return $ BoolLit True
+  eval (Var "False") env = return $ BoolLit False
   eval (Var name) env = do
     var <- lookupVarLoose name env
     env' <- readIORef env
@@ -252,9 +271,11 @@ module Lib where
   eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
   eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
   eval (BinOp Add (ListLit l1) (ListLit l2)) env = return $ ListLit (l1++l2)
+  eval (BinOp Add (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 || b2)
   eval (BinOp Sub (IntLit i1) (IntLit i2)) env = return $ IntLit (i1-i2)
   eval (BinOp Mul (IntLit i1) (IntLit i2)) env = return $ IntLit (i1*i2)
   eval (BinOp Mul (StrLit s) (IntLit i)) env = return (StrLit $ (concatMap (\i -> s) [1..i]))
+  eval (BinOp Mul (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 && b2)  
   eval (BinOp Div (IntLit i1) (IntLit i2)) env = return $ IntLit (i1 `div` i2)
   eval (BinOp Eq (Var v) e) env = do
     e' <- eval e env
@@ -262,6 +283,13 @@ module Lib where
   eval (BinOp Dot e1 (Var v)) env = eval (Apply (Var v) [e1]) env
   eval (BinOp Dot e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
   eval (BinOp (OpLit lit) e1 e2) env = eval (Apply (Var lit) [e1, e2]) env  
+  eval (BinOp And (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 && b2)  
+  eval (BinOp Or (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 || b2)  
+  eval (BinOp Equal e1 e2) env = return $ BoolLit (e1 == e2)  
+  eval (BinOp Lt (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 < i2)
+  eval (BinOp Ltq (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 <= i2)
+  eval (BinOp Gt (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 > i2)
+  eval (BinOp Gtq (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 >= i2)
   eval (BinOp op e1 e2) env = do
     e1' <- eval e1 env
     e2' <- eval e2 env
