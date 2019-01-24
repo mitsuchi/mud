@@ -46,5 +46,7 @@ try "40" "(x->x+x:a->a) 20"
 try "hogehoge" "(x->x+x:a->a) 'hoge'"
 try "40" "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x:a->a) 10"
 try "bbbb" "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x:a->a) 'b'"
+try 20 "fun apply : (a->a)->(a->a) = f -> (x -> f x : a->a); fun double:a->a = x->x+x; (apply double) 10"
+try 40 "fun twice : (a->a)->(a->a) = f -> (x -> f (f x) : a->a); fun double:a->a = x->x+x; (twice double) 10"
 
 echo OK
