@@ -109,6 +109,9 @@ module Lib where
     (IntLit i1) == (IntLit i2) = i1 == i2
     (StrLit s1) == (StrLit s2) = s1 == s2
     (ListLit l1) == (ListLit l2) = l1 == l2
+    (BoolLit b1) == (BoolLit b2) = b1 == b2
+    e1 == e2 = trace (show (e1,e2)) $ False
+
 
   ops :: [[Operator Parser Expr]]
   ops =
@@ -298,7 +301,10 @@ module Lib where
   eval (BinOp (OpLit lit) e1 e2) env = eval (Apply (Var lit) [e1, e2]) env  
   eval (BinOp And (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 && b2)  
   eval (BinOp Or (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 || b2)  
-  eval (BinOp Equal e1 e2) env = return $ BoolLit (e1 == e2)  
+  eval (BinOp Equal (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 == i2)  
+  eval (BinOp Equal (StrLit s1) (StrLit s2)) env = return $ BoolLit (s1 == s2)
+  eval (BinOp Equal (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 == b2)  
+  eval (BinOp Equal (ListLit l1) (ListLit l2)) env = return $ BoolLit (l1 == l2)  
   eval (BinOp Lt (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 < i2)
   eval (BinOp Ltq (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 <= i2)
   eval (BinOp Gt (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 > i2)
@@ -365,6 +371,7 @@ module Lib where
   typeOf' :: Expr -> DeepList String
   typeOf' (IntLit i) = Elem "Int"
   typeOf' (StrLit s) = Elem "String"
+  typeOf' (BoolLit b) = Elem "Bool"
   typeOf' (TypeSig sig _) = sig
   typeOf' (Fun sig _ _ _) = sig
   typeOf' (ListLit (e:es)) = Plain [Elem "List", typeOf' e]
@@ -399,7 +406,7 @@ module Lib where
   matchCond ((ListLit l):e1s) ((Var v):e2s) = matchCond e1s e2s
   matchCond ((Fun _ _ _ _):e1s) ((Var v):e2s) = matchCond e1s e2s
   matchCond [] [] = True
-  matchCond e1 e2 = trace ("matchCond: " ++ show (e1,e2)) $ False
+  --matchCond e1 e2 = trace ("matchCond: " ++ show (e1,e2)) $ False
   
   parseExpr :: String -> Expr
   parseExpr program = case parse expr "<stdin>" program of

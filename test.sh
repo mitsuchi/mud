@@ -67,5 +67,6 @@ try "False" "1 > 2"
 try "False" "(1 > 2) && (3 == 3)"
 try "2" "if 1==1 then 2 else 3"
 try "3" "if 1>1 then 2 else 3"
+try "[1,2,3,4,5]" "fun select : [a] -> (a -> Bool) -> [a] = { [] f -> []; es f -> if (es.head.f) then ([es.head] + select (es.tail) f) else (select (es.tail) f) }; fun qsort : [a] -> [a] = { [] -> []; es  -> es.tail.select (x -> x < es.head : a -> Bool).qsort + es.select (x -> x == es.head : a -> Bool) + es.tail.select (x -> x > es.head : a -> Bool).qsort }; qsort [3,5,1,4,2]"
 
 echo OK
