@@ -36,6 +36,7 @@ module Lib where
     | TypeSig (DeepList Type) Expr
     | ListLit [Expr]
     | BoolLit Bool
+    | If Expr Expr Expr -- If CondEx ThenEx ElseEx
 
   data Op
     = Mul
@@ -76,7 +77,7 @@ module Lib where
   rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
   
   reservedWords :: [String] -- list of reserved words
-  reservedWords = ["fun"]
+  reservedWords = ["fun","if","then","else"]
   
   identifier :: Parser String
   identifier = (lexeme . try) (p >>= check)
@@ -102,6 +103,7 @@ module Lib where
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
     show (ListLit exprs) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
     show (BoolLit b) = show b
+    show (If condEx thenEx elseEx) = "if " ++ show (condEx)
 
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
@@ -144,6 +146,7 @@ module Lib where
     <|> try (parens argWithTypeSig)
     <|> parens expr
     <|> seqExpr
+    <|> try ifExpr
     <|> try funDefCase  
     <|> try fundef
 
@@ -239,6 +242,16 @@ module Lib where
         paramNum matches = length (fst (head matches))
         paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
         varList n = map Var (paramList n)
+
+  ifExpr :: Parser Expr
+  ifExpr = do
+    rword "if"
+    condExpr <- expr
+    rword "then"
+    thenExpr <- expr
+    rword "else"
+    elseExpr <- expr
+    return $ If condExpr thenExpr elseExpr
   
   matchExpr :: Parser ([Expr], Expr)
   matchExpr = do
@@ -338,6 +351,11 @@ module Lib where
       Just fun -> return fun
       Nothing -> error (name ++ " not found")
   eval (TypeSig sig expr) env = eval expr env
+  eval (If condExpr thenExpr elseExpr) env = do
+    cond' <- eval condExpr env
+    case cond' of
+      BoolLit True -> eval thenExpr env
+      BoolLit False -> eval elseExpr env
 
   call :: Name -> [Expr] -> IO Expr
   call "head" [ListLit (e:es)] = return e

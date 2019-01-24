@@ -65,5 +65,7 @@ try "True" "1 == 1"
 try "True" "[1,2] == [1,2]"
 try "False" "1 > 2"
 try "False" "(1 > 2) && (3 == 3)"
+try "2" "if 1==1 then 2 else 3"
+try "3" "if 1>1 then 2 else 3"
 
 echo OK
