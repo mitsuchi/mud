@@ -44,6 +44,7 @@ module Lib where
     | Dot
     | RArrow
     | Colon
+    | OpLit String
     deriving (Show)
 
   sc :: Parser ()
@@ -59,6 +60,9 @@ module Lib where
   integer :: Parser Integer
   integer = lexeme L.decimal
   
+  operator :: Parser String
+  operator = lexeme $ some (oneOf "+-*><")
+
   rword :: String -> Parser ()
   rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
   
@@ -91,7 +95,8 @@ module Lib where
   ops :: [[Operator Parser Expr]]
   ops =
     [ 
-      [ InfixL (BinOp Dot <$ symbol ".") ]
+      [ InfixR (BinOp (OpLit "++") <$ symbol "++") ]
+    , [ InfixL (BinOp Dot <$ symbol ".") ]
     , [ InfixL (BinOp Mul <$ symbol "*")
       , InfixL (BinOp Div <$ symbol "/") ]
     , [ InfixL (BinOp Add <$ symbol "+")
@@ -177,7 +182,7 @@ module Lib where
   fundef :: Parser Expr
   fundef = do
     rword "fun"
-    name <- identifier
+    name <- try identifier <|> try operator
     symbol ":"
     types <- typeList
     symbol "="
@@ -237,6 +242,7 @@ module Lib where
     eval (Assign v e') env  
   eval (BinOp Dot e1 (Var v)) env = eval (Apply (Var v) [e1]) env
   eval (BinOp Dot e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
+  eval (BinOp (OpLit lit) e1 e2) env = eval (Apply (Var lit) [e1, e2]) env  
   eval (BinOp op e1 e2) env = do
     e1' <- eval e1 env
     e2' <- eval e2 env
