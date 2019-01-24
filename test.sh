@@ -3,12 +3,12 @@ try() {
   expected="$1"
   input="$2"
 
-  actual=`echo $input | fuga-exe`
+  actual=`echo "$input" | fuga-exe`
 
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
   else
-    echo "$expected expected, but got $actual"
+    echo "$expected expected, but got $actual, input = $input"
     exit 1
   fi
 }
@@ -48,5 +48,6 @@ try "40" "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x:a->a) 10"
 try "bbbb" "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x:a->a) 'b'"
 try 20 "fun apply : (a->a)->(a->a) = f -> (x -> f x : a->a); fun double:a->a = x->x+x; (apply double) 10"
 try 40 "fun twice : (a->a)->(a->a) = f -> (x -> f (f x) : a->a); fun double:a->a = x->x+x; (twice double) 10"
+try 1024 "fun ** : Int -> Int -> Int = { a 0 -> 1; a b -> (a ** (b-1)) * a }; 2 ** 10"
 
 echo OK

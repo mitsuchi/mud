@@ -95,7 +95,8 @@ module Lib where
   ops :: [[Operator Parser Expr]]
   ops =
     [ 
-      [ InfixR (BinOp (OpLit "++") <$ symbol "++") ]
+      [ InfixR (BinOp (OpLit "++") <$ symbol "++")
+      , InfixR (BinOp (OpLit "**") <$ symbol "**") ]
     , [ InfixL (BinOp Dot <$ symbol ".") ]
     , [ InfixL (BinOp Mul <$ symbol "*")
       , InfixL (BinOp Div <$ symbol "/") ]
@@ -194,7 +195,7 @@ module Lib where
   funDefCase :: Parser Expr
   funDefCase = do
     rword "fun"
-    name <- identifier
+    name <- try identifier <|> try operator
     symbol ":"
     types <- typeList
     symbol "="
