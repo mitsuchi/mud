@@ -34,6 +34,7 @@ module Lib where
     | Apply Expr [Expr]
     | Case [Expr] [([Expr],Expr)] (DeepList Type)
     | TypeSig (DeepList Type) Expr
+    | ListLit [Expr]
 
   data Op
     = Mul
@@ -91,7 +92,12 @@ module Lib where
     show (FunDefAnon types params body) = "anon fun : " ++ (show types)
     show (Apply e1 e2) = "application : " ++ show (e1) ++ " on " ++ show (e2)
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
-  
+    show (ListLit exprs) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
+
+  instance Eq Expr where
+    (IntLit i1) == (IntLit i2) = i1 == i2
+    (StrLit s1) == (StrLit s2) = s1 == s2
+
   ops :: [[Operator Parser Expr]]
   ops =
     [ 
@@ -117,6 +123,7 @@ module Lib where
   arg = IntLit <$> integer
     <|> strLit
     <|> Var <$> identifier
+    <|> listLit
     <|> try (parens argWithTypeSig)
     <|> parens expr
     <|> seqExpr
@@ -155,7 +162,14 @@ module Lib where
     str <- many $ noneOf "'"
     symbol "'"
     return $ StrLit str
-  
+
+  listLit :: Parser Expr
+  listLit = do
+    symbol "["
+    exprs <- sepBy expr (symbol ",")
+    symbol "]"
+    return $ ListLit exprs
+
   seqExpr :: Parser Expr
   seqExpr = do
     symbol "{"
@@ -226,6 +240,9 @@ module Lib where
   eval :: Expr -> Env -> IO Expr
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
+  eval (ListLit es) env = do
+    es' <- mapM (\e -> eval e env) es
+    return $ ListLit es'
   eval (Var name) env = do
     var <- lookupVarLoose name env
     env' <- readIORef env
@@ -234,6 +251,7 @@ module Lib where
       Just x -> return x
   eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
   eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
+  eval (BinOp Add (ListLit l1) (ListLit l2)) env = return $ ListLit (l1++l2)
   eval (BinOp Sub (IntLit i1) (IntLit i2)) env = return $ IntLit (i1-i2)
   eval (BinOp Mul (IntLit i1) (IntLit i2)) env = return $ IntLit (i1*i2)
   eval (BinOp Mul (StrLit s) (IntLit i)) env = return (StrLit $ (concatMap (\i -> s) [1..i]))
@@ -270,13 +288,12 @@ module Lib where
     varMap <- readIORef outerEnv
     env' <- newEnv params args varMap
     eval body env'
-
   eval (Apply (Var name) args) env = do
     args' <- mapM (\arg -> eval arg env) args
     fun' <- lookupFun name (Plain (map typeOf' args')) env
     case fun' of
       Just fun -> eval (Apply fun args') env
-      Nothing -> error (name ++ " not found")
+      Nothing -> call name args'
   eval (Apply expr args) env = do
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
@@ -294,11 +311,18 @@ module Lib where
       Nothing -> error (name ++ " not found")
   eval (TypeSig sig expr) env = eval expr env
 
+  call :: Name -> [Expr] -> IO Expr
+  call "head" [ListLit (e:es)] = return e
+  call "tail" [ListLit (e:es)] = return $ ListLit es
+  call name _ = error (name ++ " not found")
+
   typeOf' :: Expr -> DeepList String
   typeOf' (IntLit i) = Elem "Int"
   typeOf' (StrLit s) = Elem "String"
   typeOf' (TypeSig sig _) = sig
   typeOf' (Fun sig _ _ _) = sig
+  typeOf' (ListLit (e:es)) = Plain [Elem "List", typeOf' e]
+  typeOf' (ListLit []) = Plain [Elem "List", Elem "a"]
 
   newEnv :: [Name] -> [Expr] -> (Map Name [(DeepList Type, Expr)]) -> IO Env
   newEnv params args outerEnv = do
@@ -325,7 +349,11 @@ module Lib where
   matchCond :: [Expr] -> [Expr] -> Bool
   matchCond (IntLit i:e1s) (IntLit j:e2s) = i == j && matchCond e1s e2s
   matchCond ((IntLit i):e1s) ((Var v):e2s) = matchCond e1s e2s
+  matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) = l1 == l2 && matchCond e1s e2s
+  matchCond ((ListLit l):e1s) ((Var v):e2s) = matchCond e1s e2s
+  matchCond ((Fun _ _ _ _):e1s) ((Var v):e2s) = matchCond e1s e2s
   matchCond [] [] = True
+  matchCond e1 e2 = trace ("matchCond: " ++ show (e1,e2)) $ False
   
   parseExpr :: String -> Expr
   parseExpr program = case parse expr "<stdin>" program of
@@ -363,7 +391,16 @@ module Lib where
     return $ Plain (term1 : terms)
 
   typeTerm :: Parser (DeepList String)
-  typeTerm = (Elem <$> identifier) <|> parens typeList
+  typeTerm = try listTerm
+    <|> (Elem <$> identifier)
+    <|> parens typeList
+
+  listTerm :: Parser (DeepList String)
+  listTerm = do
+    symbol "["
+    term <- identifier
+    symbol "]"
+    return $ Plain [ Elem "List", Elem term ]
 
   makeMap :: [String] -> Map String Int
   makeMap list = makeMap' list 0 Map.empty

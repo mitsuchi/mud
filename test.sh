@@ -49,5 +49,9 @@ try "bbbb" "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x:a->a) 'b'"
 try 20 "fun apply : (a->a)->(a->a) = f -> (x -> f x : a->a); fun double:a->a = x->x+x; (apply double) 10"
 try 40 "fun twice : (a->a)->(a->a) = f -> (x -> f (f x) : a->a); fun double:a->a = x->x+x; (twice double) 10"
 try 1024 "fun ** : Int -> Int -> Int = { a 0 -> 1; a b -> (a ** (b-1)) * a }; 2 ** 10"
+try 3 "fun ** : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c); fun inc : Int -> Int = x -> x + 1; fun double : Int -> Int = x -> x * 2; (inc ** double) 1"
+try 5 "fun length : [a] -> Int = { [] -> 0; es -> 1 + length (tail es) }; length [4,5,6,7,8]"
+try "[2,4,6]" "fun map : [a] -> (a->a) -> [a] = { [] f -> []; es f -> [f (head es)] + (map (tail es) f)}; map [1,2,3] (x -> x + x : Int -> Int)"
+try "[4,3,2,1]" "fun reverse : [a] -> [a] = { [] -> []; es -> (reverse (tail es)) + [head es] }; reverse [1,2,3,4]"
 
 echo OK
