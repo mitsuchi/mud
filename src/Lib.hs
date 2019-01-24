@@ -29,6 +29,7 @@ module Lib where
     | Seq [Expr]
     | Assign Name Expr
     | FunDef Name (DeepList Type) [Param] Expr
+    | FunDefAnon (DeepList Type) [Param] Expr
     | Fun (DeepList Type) [Param] Expr Env
     | Apply Expr [Expr]
     | Case [Expr] [([Expr],Expr)] (DeepList Type)
@@ -83,6 +84,7 @@ module Lib where
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
     show (Fun types params body env) = "function : " ++ (show types)
     show (FunDef name types params body) = name
+    show (FunDefAnon types params body) = "anon fun : " ++ (show types)
     show (Apply e1 e2) = "application : " ++ show (e1) ++ " on " ++ show (e2)
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
   
@@ -101,18 +103,35 @@ module Lib where
   expr = makeExprParser term ops
   
   term :: Parser Expr
-  term = try apply
-    <|> try argWithTypeSig
+  term = try anonFun
+    <|> try apply
     <|> arg
   
   arg :: Parser Expr
   arg = IntLit <$> integer
     <|> strLit
     <|> Var <$> identifier
+    <|> try (parens argWithTypeSig)
     <|> parens expr
     <|> seqExpr
     <|> try funDefCase  
-    <|> fundef
+    <|> try fundef
+
+  anonFun :: Parser Expr
+  anonFun = do
+    params <- some identifier
+    symbol "->"
+    body <- expr
+    symbol ":"
+    sig <- typeList
+    return $ FunDefAnon sig params body
+
+  exprWithTypeSig :: Parser Expr
+  exprWithTypeSig = do
+    expr' <- expr
+    symbol ":"
+    sig <- typeList
+    return $ TypeSig sig expr'
 
   argWithTypeSig :: Parser Expr
   argWithTypeSig = do
@@ -238,6 +257,8 @@ module Lib where
       Right env -> return expr
   eval (FunDef name types params body) env = do
     eval (Assign name (Fun types params body env)) env  
+  eval (FunDefAnon types params body) env = do
+    return $ Fun types params body env
   eval (Apply (Fun types params body outerEnv) args) env = do
     varMap <- readIORef outerEnv
     env' <- newEnv params args varMap

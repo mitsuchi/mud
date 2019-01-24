@@ -40,4 +40,11 @@ try 40 "fun double : Int -> Int = x -> x + x; fun twice : (Int->Int)->Int->Int =
 try 10 "fun id : a -> a = x -> x; (id id) 10"
 try "aaaa" "fun double : a -> a = x -> x + x; fun twice : (a->a)->a->a = f x -> f (f x); twice double 'a'"
 try 40 "fun comp : (b->c) -> (a->b) -> a -> c = f g x -> f (g x); fun double : a->a = x -> x + x; comp double double 10"
+try 20 "(x->x+x:Int->Int) 10"
+try "aa" "(x->x+x:String->String) 'a'"
+try "40" "(x->x+x:a->a) 20"
+try "hogehoge" "(x->x+x:a->a) 'hoge'"
+try "40" "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x:a->a) 10"
+try "bbbb" "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x:a->a) 'b'"
+
 echo OK
