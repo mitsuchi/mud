@@ -1,27 +1,27 @@
 fun length : [a] -> Int = {
-  [] -> 0
+  []    -> 0
   [h,t] -> 1 + length t
 }
 
-fun map : [a] -> (a->a) -> [a] = {
-  [] f -> []
+fun map : [a] -> (a->b) -> [b] = {
+  [] f    -> []
   [h,t] f -> [f h] + map t f
 }
 
 fun reverse : [a] -> [a] = {
-  [] -> []
+  []    -> []
   [h,t] -> reverse t + [h]
 }
 
 fun select : [a] -> (a -> Bool) -> [a] = {
-  [] f -> []
+  []    f -> []
   [h,t] f -> if (h.f)
     then ([h] + select t f)
     else (select t f)
 }
 
 fun qsort : [a] -> [a] = {
-    [] -> []
+    []    -> []
     [h,t] -> t.select (x -> x < h : a -> Bool).qsort +
       ([h]+t).select (x -> x == h : a -> Bool) + 
       t.select (x -> x > h : a -> Bool).qsort
