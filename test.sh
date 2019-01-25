@@ -72,5 +72,6 @@ try 4.6 "1.2+3.4"
 try 6.8 "2*3.4"
 try -3 "-3"
 try -48 "-4*12"
+try 2.2 "fun add : Double -> Double = { x y -> x + y }; add 1.1 1.1"
 
 echo OK

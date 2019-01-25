@@ -447,6 +447,8 @@ module Lib where
   matchCond :: [Expr] -> [Expr] -> Bool
   matchCond (IntLit i:e1s) (IntLit j:e2s) = i == j && matchCond e1s e2s
   matchCond ((IntLit i):e1s) ((Var v):e2s) = matchCond e1s e2s
+  matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) = i == j && matchCond e1s e2s
+  matchCond ((DoubleLit i):e1s) ((Var v):e2s) = matchCond e1s e2s  
   matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) = l1 == l2 && matchCond e1s e2s
   matchCond ((ListLit l):e1s) ((Var v):e2s) = matchCond e1s e2s
   matchCond ((Fun _ _ _ _):e1s) ((Var v):e2s) = matchCond e1s e2s
