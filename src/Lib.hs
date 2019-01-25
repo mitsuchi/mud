@@ -65,7 +65,13 @@ module Lib where
       spaceOrTab1 = void $ takeWhile1P (Just "white space") (\c -> c == ' ' || c == '\t')
       lineCmnt  = L.skipLineComment "#"
       blockCmnt = L.skipBlockComment "/*" "*/"
-  
+
+  scn :: Parser ()
+  scn = L.space space1 lineCmnt blockCmnt
+    where
+      lineCmnt  = L.skipLineComment "#"
+      blockCmnt = L.skipBlockComment "/*" "*/"
+      
   lexeme :: Parser a -> Parser a
   lexeme = L.lexeme sc
   
@@ -79,7 +85,7 @@ module Lib where
   operator = lexeme $ some (oneOf "+-*><")
 
   rword :: String -> Parser ()
-  rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
+  rword w = (lexeme . try) (space >> string w *> notFollowedBy alphaNumChar)
   
   reservedWords :: [String] -- list of reserved words
   reservedWords = ["fun","if","then","else"]
@@ -93,7 +99,7 @@ module Lib where
                   else return x
   
   symbol :: String -> Parser String
-  symbol = L.symbol sc
+  symbol s = (L.symbol scn s)
   
   instance Show Expr where
     show (IntLit i1) = show i1 
