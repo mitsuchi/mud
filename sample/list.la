@@ -4,7 +4,7 @@ fun length : [a] -> Int = {
 }
 
 fun map : [a] -> (a->b) -> [b] = {
-  [] f    -> []
+  []    f -> []
   [h,t] f -> [f h] + map t f
 }
 
