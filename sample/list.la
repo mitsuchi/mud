@@ -21,8 +21,8 @@ fun select : [a] -> (a -> Bool) -> [a] = {
 fun qsort : [a] -> [a] = {
     [] -> []
     es  -> {
-      lesser = es.tail.select (x -> x < es.head : a -> Bool).qsort
-      equal = es.select (x -> x == es.head : a -> Bool)
+      lesser  = es.tail.select (x -> x < es.head : a -> Bool).qsort
+      equal   = es.select (x -> x == es.head : a -> Bool)
       greater = es.tail.select (x -> x > es.head : a -> Bool).qsort
       lesser + equal + greater
     }
