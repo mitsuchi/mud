@@ -1,0 +1,14 @@
+fun sqrtIter : Double -> Double -> Double = guess x -> {
+    if goodEnough guess x then guess else sqrtIter (improve guess x) x
+}
+fun improve : Double -> Double -> Double = guess x -> {
+    average guess (x/guess)
+}
+fun average : Double -> Double -> Double = x y -> (x+y)/2
+fun sqrt : Double -> Double = x -> sqrtIter 1.0 x
+fun goodEnough : Double -> Double -> Bool = guess x -> {
+    abs (guess*guess - x) < 0.0001
+}
+fun abs : Double -> Double = x -> if x < 0 then 0-x else x
+
+sqrt 2.0
