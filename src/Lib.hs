@@ -38,6 +38,7 @@ module Lib where
     | ListLit [Expr]
     | BoolLit Bool
     | If Expr Expr Expr -- If CondEx ThenEx ElseEx
+    | Neg Expr
 
   data Op
     = Mul
@@ -95,9 +96,10 @@ module Lib where
   symbol = L.symbol sc
   
   instance Show Expr where
-    show (IntLit i1) = show i1      
+    show (IntLit i1) = show i1 
     show (StrLit str) = str
     show (DoubleLit f) = show f
+    show (Neg e) = "-" ++ show e
     show (Var name) = "Var " ++ name
     show (BinOp op e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
@@ -121,7 +123,8 @@ module Lib where
   ops :: [[Operator Parser Expr]]
   ops =
     [ 
-      [ InfixR (BinOp (OpLit "++") <$ symbol "++")
+      [ Prefix (Neg <$ symbol "-") ]
+    , [ InfixR (BinOp (OpLit "++") <$ symbol "++")
       , InfixR (BinOp (OpLit "**") <$ symbol "**") ]
     , [ InfixL (BinOp Dot <$ (symbol "." *> notFollowedBy integer)) ]
     , [ InfixL (BinOp Mul <$ symbol "*")
@@ -291,6 +294,7 @@ module Lib where
     case var of
       Nothing -> error ("'" ++ name ++ "' not found, env = " ++ (show env'))
       Just x -> return x
+  eval (Neg expr) env = eval (BinOp Sub (IntLit 0) expr) env
   eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
   eval (BinOp Add (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1+f2)
   eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
