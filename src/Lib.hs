@@ -397,6 +397,9 @@ module Lib where
   call :: Name -> [Expr] -> IO Expr
   call "head" [ListLit (e:es)] = return e
   call "tail" [ListLit (e:es)] = return $ ListLit es
+  call "puts" [e] = do
+    print e
+    return e
   call name _ = error (name ++ " not found")
 
   typeOf' :: Expr -> DeepList String
