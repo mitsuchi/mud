@@ -73,5 +73,6 @@ try 6.8 "2*3.4"
 try -3 "-3"
 try -48 "-4*12"
 try 2.2 "fun add : Double -> Double = { x y -> x + y }; add 1.1 1.1"
+try "[4,3,2,1]" "fun reverse : [a] -> [a] = { [] -> []; [h,t] -> (reverse t) + [h] }; reverse [1,2,3,4]"
 
 echo OK

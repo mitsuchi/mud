@@ -442,6 +442,9 @@ module Lib where
   paramsAndArgs [] [] = ([],[])
   paramsAndArgs (Var v:e1s) (e:e2s) = let rests = paramsAndArgs e1s e2s
                                       in (v : (fst rests), e : (snd rests))
+  paramsAndArgs (ListLit [Var h,Var t]:e1s) (ListLit (e2:e2'):e2s) = 
+    let rests = paramsAndArgs e1s e2s
+    in (h : t : (fst rests), e2 : (ListLit e2') : (snd rests))
   paramsAndArgs (e1:e1s) (e2:e2s) = paramsAndArgs e1s e2s
   
   matchCond :: [Expr] -> [Expr] -> Bool
@@ -449,11 +452,12 @@ module Lib where
   matchCond ((IntLit i):e1s) ((Var v):e2s) = matchCond e1s e2s
   matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) = i == j && matchCond e1s e2s
   matchCond ((DoubleLit i):e1s) ((Var v):e2s) = matchCond e1s e2s  
+  matchCond ((ListLit l1):e1s) ((ListLit [Var h, Var t]):e2s) = matchCond e1s e2s
   matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) = l1 == l2 && matchCond e1s e2s
   matchCond ((ListLit l):e1s) ((Var v):e2s) = matchCond e1s e2s
   matchCond ((Fun _ _ _ _):e1s) ((Var v):e2s) = matchCond e1s e2s
   matchCond [] [] = True
-  --matchCond e1 e2 = trace ("matchCond: " ++ show (e1,e2)) $ False
+  matchCond e1 e2 = trace ("matchCond: " ++ show (e1,e2)) $ False
   
   parseExpr :: String -> Expr
   parseExpr program = case parse expr "<stdin>" program of
