@@ -24,6 +24,7 @@ module Lib where
   data Expr
     = IntLit Integer
     | StrLit String
+    | DoubleLit Double
     | Var Name
     | BinOp Op Expr Expr
     | Seq [Expr]
@@ -70,6 +71,9 @@ module Lib where
   integer :: Parser Integer
   integer = lexeme L.decimal
   
+  double :: Parser Double
+  double = lexeme L.float
+
   operator :: Parser String
   operator = lexeme $ some (oneOf "+-*><")
 
@@ -91,8 +95,9 @@ module Lib where
   symbol = L.symbol sc
   
   instance Show Expr where
-    show (IntLit i1) = show i1  
+    show (IntLit i1) = show i1      
     show (StrLit str) = str
+    show (DoubleLit f) = show f
     show (Var name) = "Var " ++ name
     show (BinOp op e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
@@ -118,7 +123,7 @@ module Lib where
     [ 
       [ InfixR (BinOp (OpLit "++") <$ symbol "++")
       , InfixR (BinOp (OpLit "**") <$ symbol "**") ]
-    , [ InfixL (BinOp Dot <$ symbol ".") ]
+    , [ InfixL (BinOp Dot <$ (symbol "." *> notFollowedBy integer)) ]
     , [ InfixL (BinOp Mul <$ symbol "*")
       , InfixL (BinOp Div <$ symbol "/") ]
     , [ InfixL (BinOp Add <$ symbol "+")
@@ -142,7 +147,8 @@ module Lib where
     <|> arg
   
   arg :: Parser Expr
-  arg = IntLit <$> integer
+  arg = try (DoubleLit <$> double)
+    <|> IntLit <$> integer
     <|> strLit
     <|> Var <$> identifier
     <|> listLit
@@ -273,6 +279,7 @@ module Lib where
   eval :: Expr -> Env -> IO Expr
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
+  eval (DoubleLit f) env = return $ DoubleLit f
   eval (ListLit es) env = do
     es' <- mapM (\e -> eval e env) es
     return $ ListLit es'
@@ -285,14 +292,26 @@ module Lib where
       Nothing -> error ("'" ++ name ++ "' not found, env = " ++ (show env'))
       Just x -> return x
   eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
+  eval (BinOp Add (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1+f2)
   eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
   eval (BinOp Add (ListLit l1) (ListLit l2)) env = return $ ListLit (l1++l2)
   eval (BinOp Add (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 || b2)
+  eval (BinOp Add (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 + f2)
+  eval (BinOp Add (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1 + fromIntegral i2)
   eval (BinOp Sub (IntLit i1) (IntLit i2)) env = return $ IntLit (i1-i2)
+  eval (BinOp Sub (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1-f2)
+  eval (BinOp Sub (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 - f2)
+  eval (BinOp Sub (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1- fromIntegral i2)
   eval (BinOp Mul (IntLit i1) (IntLit i2)) env = return $ IntLit (i1*i2)
+  eval (BinOp Mul (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1*f2)
   eval (BinOp Mul (StrLit s) (IntLit i)) env = return (StrLit $ (concatMap (\i -> s) [1..i]))
   eval (BinOp Mul (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 && b2)  
+  eval (BinOp Mul (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 * f2)
+  eval (BinOp Mul (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1* fromIntegral i2)
   eval (BinOp Div (IntLit i1) (IntLit i2)) env = return $ IntLit (i1 `div` i2)
+  eval (BinOp Div (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1/f2)
+  eval (BinOp Div (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 / f2)
+  eval (BinOp Div (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1/ fromIntegral i2)
   eval (BinOp Eq (Var v) e) env = do
     e' <- eval e env
     eval (Assign v e') env  
@@ -309,6 +328,18 @@ module Lib where
   eval (BinOp Ltq (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 <= i2)
   eval (BinOp Gt (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 > i2)
   eval (BinOp Gtq (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 >= i2)
+  eval (BinOp Lt (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 < i2)
+  eval (BinOp Ltq (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 <= i2)
+  eval (BinOp Gt (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 > i2)
+  eval (BinOp Gtq (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 >= i2)
+  eval (BinOp Lt (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 < i2)
+  eval (BinOp Lt (DoubleLit i1) (IntLit i2)) env = return $ BoolLit (i1 < fromIntegral i2)
+  eval (BinOp Ltq (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 <= i2)
+  eval (BinOp Ltq (DoubleLit i1) (IntLit i2)) env = return $ BoolLit (i1 <= fromIntegral i2)
+  eval (BinOp Gt (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 > i2)
+  eval (BinOp Gt (DoubleLit i1) (IntLit i2)) env = return $ BoolLit ( i1 > fromIntegral i2)
+  eval (BinOp Gtq (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 >= i2)
+  eval (BinOp Gtq (DoubleLit i1) (IntLit i2)) env = return $ BoolLit (i1 >= fromIntegral i2)
   eval (BinOp op e1 e2) env = do
     e1' <- eval e1 env
     e2' <- eval e2 env
@@ -372,6 +403,7 @@ module Lib where
   typeOf' (IntLit i) = Elem "Int"
   typeOf' (StrLit s) = Elem "String"
   typeOf' (BoolLit b) = Elem "Bool"
+  typeOf' (DoubleLit b) = Elem "Double"
   typeOf' (TypeSig sig _) = sig
   typeOf' (Fun sig _ _ _) = sig
   typeOf' (ListLit (e:es)) = Plain [Elem "List", typeOf' e]
