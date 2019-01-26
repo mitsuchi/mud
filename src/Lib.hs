@@ -100,23 +100,27 @@ module Lib where
   
   symbol :: String -> Parser String
   symbol s = (L.symbol scn s)
+
+  symboln :: String -> Parser String
+  symboln s = (L.symbol sc s)  
   
   instance Show Expr where
     show (IntLit i1) = show i1 
     show (StrLit str) = str
     show (DoubleLit f) = show f
     show (Neg e) = "-" ++ show e
-    show (Var name) = "Var " ++ name
+    show (Var name) = name
     show (BinOp op e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
     show (Fun types params body env) = "function : " ++ (show types)
-    show (FunDef name types params body) = name
+    show (FunDef name types params body) = "(Fun (" ++ name ++ ") " ++ (show body) ++ ")"
     show (FunDefAnon types params body) = "anon fun : " ++ (show types)
-    show (Apply e1 e2) = "application : " ++ show (e1) ++ " on " ++ show (e2)
+    show (Apply e1 e2) = "(" ++ show (e1) ++ " " ++ show (e2) ++ ")"
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
     show (ListLit exprs) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
     show (BoolLit b) = show b
-    show (If condEx thenEx elseEx) = "if " ++ show (condEx)
+    show (If condEx thenEx elseEx) = "if " ++ show (condEx) ++ " then " ++ show thenEx ++ " else " ++ show elseEx
+    show (Case exprs matches types) = "(Case " ++ (show matches) ++ ")"
 
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
@@ -154,6 +158,9 @@ module Lib where
   term = try anonFun
     <|> try apply
     <|> arg
+    <|> try ifExpr
+    <|> try funDefCase  
+    <|> try fundef
   
   arg :: Parser Expr
   arg = try (DoubleLit <$> double)
@@ -164,9 +171,6 @@ module Lib where
     <|> try (parens argWithTypeSig)
     <|> parens expr
     <|> seqExpr
-    <|> try ifExpr
-    <|> try funDefCase  
-    <|> try fundef
 
   anonFun :: Parser Expr
   anonFun = do
@@ -205,7 +209,7 @@ module Lib where
   listLit = do
     symbol "["
     exprs <- sepBy expr (symbol ",")
-    symbol "]"
+    symboln "]"
     return $ ListLit exprs
 
   seqExpr :: Parser Expr
