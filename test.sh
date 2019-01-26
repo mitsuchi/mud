@@ -75,5 +75,8 @@ try -48 "-4*12"
 try 2.2 "fun add : Double -> Double = { x y -> x + y }; add 1.1 1.1"
 try "[4,3,2,1]" "fun reverse : [a] -> [a] = { [] -> []; [h,t] -> (reverse t) + [h] }; reverse [1,2,3,4]"
 try 3 "fun outer : a -> a = x -> { fun inner : a -> a -> a = x y -> x + y; inner 1 x }; outer 2"
+try 1 "type Complex = { r:Int, i:Int }; a = Complex 1 2; a.r"
+try 2 "type Complex = { r:Int, i:Int }; a = Complex 1 2; a.i"
+try 4 "type Complex = { r:Int, i:Int }; fun add : Complex -> Complex = x y -> Complex (x.r+y.r) (x.i+y.i); a = Complex 1 2; b = Complex 3 4; (add a b).r"
 
 echo OK

@@ -1,6 +1,6 @@
 module Lib where
 
-  import Control.Monad (void)
+  import Control.Monad (void, forM_)
   import Control.Monad.Combinators.Expr
   import Data.Void
   import Data.Char
@@ -39,6 +39,9 @@ module Lib where
     | BoolLit Bool
     | If Expr Expr Expr -- If CondEx ThenEx ElseEx
     | Neg Expr
+    | TypeDef Name [(String, DeepList Type)]
+    | StructType [(String, DeepList Type)]
+    | StructValue (Map Name Expr)
 
   data Op
     = Mul
@@ -88,7 +91,7 @@ module Lib where
   rword w = (lexeme . try) (space >> string w *> notFollowedBy alphaNumChar)
   
   reservedWords :: [String] -- list of reserved words
-  reservedWords = ["fun","if","then","else"]
+  reservedWords = ["fun","if","then","else","type"]
   
   identifier :: Parser String
   identifier = (lexeme . try) (p >>= check)
@@ -121,6 +124,9 @@ module Lib where
     show (BoolLit b) = show b
     show (If condEx thenEx elseEx) = "if " ++ show (condEx) ++ " then " ++ show thenEx ++ " else " ++ show elseEx
     show (Case exprs matches types) = "(Case " ++ (show matches) ++ ")"
+    show (TypeDef name types) = "(TypeDef " ++ name ++ " " ++ show types ++ ")"
+    show (StructType types) = "(StructType " ++ show types ++ ")"
+    show (StructValue structValue) = "(StructValue " ++ show structValue ++ ")"
 
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
@@ -161,6 +167,7 @@ module Lib where
     <|> try ifExpr
     <|> try funDefCase  
     <|> try fundef
+    <|> try typeDef
   
   arg :: Parser Expr
   arg = try (DoubleLit <$> double)
@@ -235,7 +242,24 @@ module Lib where
     many newLine
     exprs <- many exprNewLine
     return $ Seq exprs
-  
+
+  typeDef :: Parser Expr
+  typeDef = do
+    rword "type"
+    name <- identifier
+    symbol "="
+    symbol "{"
+    types <- sepBy1 memberWithType (symbol ",")
+    symbol "}"
+    return $ TypeDef name types
+
+  memberWithType :: Parser (String, DeepList Type)
+  memberWithType = do
+    member <- identifier
+    symbol ":"
+    types <- typeList
+    return $ (member, types)
+
   fundef :: Parser Expr
   fundef = do
     rword "fun"
@@ -385,7 +409,7 @@ module Lib where
     fun' <- lookupFun name (Plain (map typeOf' args')) env
     case fun' of
       Just fun -> eval (Apply fun args') env
-      Nothing -> call name args'
+      Nothing -> call name args' env
   eval (Apply expr args) env = do
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
@@ -400,21 +424,52 @@ module Lib where
     fun' <- lookupFun name sig env
     case fun' of
       Just fun -> return fun
-      Nothing -> error (name ++ " not found")
+      Nothing -> do
+        env' <- readIORef env
+        error (name ++ " not found , env = " ++ (show env'))
   eval (TypeSig sig expr) env = eval expr env
   eval (If condExpr thenExpr elseExpr) env = do
     cond' <- eval condExpr env
     case cond' of
       BoolLit True -> eval thenExpr env
       BoolLit False -> eval elseExpr env
+  eval (TypeDef name typeDef) env = do
+    forM_ typeDef $ \(member, (Plain [typeList])) -> do
+      eval (FunDef member (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct") [Var "x", StrLit member])) env
+    eval (FunDef name types params (Apply (Var "makeStruct") (StrLit name : map StrLit params))) env    
+    where types = typeDefToTypes typeDef
+          params = map fst typeDef
+  eval value@(StructValue structValue) env = return value
 
-  call :: Name -> [Expr] -> IO Expr
-  call "head" [ListLit (e:es)] = return e
-  call "tail" [ListLit (e:es)] = return $ ListLit es
-  call "puts" [e] = do
+  -- [("r",Plain [Elem "Int"]),("i",Plain [Elem "Int"])]
+  -- を以下に変換する
+  -- Plain [Elem "Int", Elem "Int"]
+  typeDefToTypes :: [(Name, DeepList Type)] -> DeepList Type
+  typeDefToTypes es = Plain (foldMap ((++) . (\(Plain x) -> x) . snd) es [])
+
+  call :: Name -> [Expr] -> Env -> IO Expr
+  call "head" [ListLit (e:es)] env = return e
+  call "tail" [ListLit (e:es)] env = return $ ListLit es
+  call "puts" [e] env = do
     print e
     return e
-  call name _ = error (name ++ " not found")
+  call "makeStruct" (name:args) env = do
+    makeStruct args (Map.fromList [("type", name)]) env
+  call "lookupStruct" [StructValue structValue, StrLit member] env = do
+    case Map.lookup member structValue of
+      Just expr -> return expr
+      Nothing -> error ("can't find struct member '" ++ member ++ "'")
+  call name args env = do
+    env' <- readIORef env
+    error (name ++ " not found, args = " ++ (show args) ++ ", env = " ++ (show env'))
+
+  makeStruct :: [Expr] -> Map Name Expr -> Env -> IO Expr
+  makeStruct [] m env = return $ StructValue m
+  makeStruct (StrLit name : es) m env = do
+    var <- lookupVar name env
+    case var of 
+      Just expr -> makeStruct es (Map.insert name expr m) env
+      Nothing -> error "can't find struct member"
 
   typeOf' :: Expr -> DeepList String
   typeOf' (IntLit i) = Elem "Int"
@@ -425,6 +480,9 @@ module Lib where
   typeOf' (Fun sig _ _ _) = sig
   typeOf' (ListLit (e:es)) = Plain [Elem "List", typeOf' e]
   typeOf' (ListLit []) = Plain [Elem "List", Elem "a"]
+  typeOf' (StructValue s) = case Map.lookup "type" s of
+    Just (StrLit str) -> Elem str
+    Nothing           -> error "type not defined in struct value"
 
   newEnv :: [Name] -> [Expr] -> (Map Name [(DeepList Type, Expr)]) -> IO Env
   newEnv params args outerEnv = do
