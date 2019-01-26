@@ -203,7 +203,7 @@ module Lib where
     return $ TypeSig sig arg'
 
   parens :: Parser a -> Parser a
-  parens = between (symbol "(") (symbol ")")
+  parens = between (symbol "(") (symboln ")")
 
   strLit :: Parser Expr
   strLit = do
