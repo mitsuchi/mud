@@ -435,7 +435,7 @@ module Lib where
   insertAny :: (Name, Expr) -> Env -> IO (Either String Env)
   insertAny (name, expr) env = case expr of
     (Fun types _ _ _) -> insertFun name types expr env
-    otherwise         -> insertVar name expr env
+    otherwise         -> insertVarForce name expr env
 
   fromVars :: [Expr] -> [String]
   fromVars (Var v:[]) = [v]
@@ -538,12 +538,15 @@ module Lib where
   insertVar name expr env = do
     e <- anyExists name env
     if not e
-    then do
-      env' <- readIORef env
-      writeIORef env (Map.insert name [(Elem "_", expr)] env')
-      return $ Right env
+    then insertVarForce name expr env
     else return $ Left (name ++ " already exists")
-  
+
+  insertVarForce :: Name -> Expr -> Env -> IO (Either String Env)
+  insertVarForce name expr env = do
+    env' <- readIORef env
+    writeIORef env (Map.insert name [(Elem "_", expr)] env')
+    return $ Right env
+
   varExists :: Name -> Env -> IO Bool
   varExists name env = do
     exists <- lookupVar name env
