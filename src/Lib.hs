@@ -378,6 +378,10 @@ module Lib where
   eval (BinOp Gt (DoubleLit i1) (IntLit i2)) env = return $ BoolLit ( i1 > fromIntegral i2)
   eval (BinOp Gtq (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 >= i2)
   eval (BinOp Gtq (DoubleLit i1) (IntLit i2)) env = return $ BoolLit (i1 >= fromIntegral i2)
+  eval (BinOp Add e1@(StructValue s1) e2@(StructValue s2)) env = eval (Apply (Var "+") [e1, e2]) env
+  eval (BinOp Sub e1@(StructValue s1) e2@(StructValue s2)) env = eval (Apply (Var "-") [e1, e2]) env
+  eval (BinOp Mul e1@(StructValue s1) e2@(StructValue s2)) env = eval (Apply (Var "*") [e1, e2]) env
+  eval (BinOp Div e1@(StructValue s1) e2@(StructValue s2)) env = eval (Apply (Var "/") [e1, e2]) env
   eval (BinOp op e1 e2) env = do
     e1' <- eval e1 env
     e2' <- eval e2 env
