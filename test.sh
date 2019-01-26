@@ -80,5 +80,7 @@ try 2 "type Complex = { r:Int, i:Int }; a = Complex 1 2; a.i"
 try 4 "type Complex = { r:Int, i:Int }; fun add : Complex -> Complex = x y -> Complex (x.r+y.r) (x.i+y.i); a = Complex 1 2; b = Complex 3 4; (add a b).r"
 try 4 "type Complex = { r:Int, i:Int }; fun + : Complex -> Complex = x y -> Complex (x.r+y.r) (x.i+y.i); a = Complex 1 2; b = Complex 3 4; (a + b).r"
 try 8 "type Complex = { r:Int, i:Int }; fun * : Complex -> Complex =x y -> Complex (x.r*y.r) (x.i*y.i); a = Complex 1 2; b = Complex 3 4; (a * b).i"
+try 3 "type Complex = { r:Int, i:Int }; fun + : Complex -> Int -> Complex = x y -> Complex (x.r+y) (x.i); a = Complex 1 2; (a + 2).r"
+try 3 "type Complex = { r:Int, i:Int }; fun + : Int -> Complex -> Complex = y x -> Complex (x.r+y) (x.i); a = Complex 1 2; (2 + a).r"
 
 echo OK
