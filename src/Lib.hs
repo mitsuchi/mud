@@ -85,7 +85,7 @@ module Lib where
   double = lexeme L.float
 
   operator :: Parser String
-  operator = lexeme $ some (oneOf "+-*><")
+  operator = lexeme $ some (oneOf "+-*/><")
 
   rword :: String -> Parser ()
   rword w = (lexeme . try) (space >> string w *> notFollowedBy alphaNumChar)
@@ -177,7 +177,7 @@ module Lib where
     <|> listLit
     <|> try (parens argWithTypeSig)
     <|> parens expr
-    <|> seqExpr
+    <|> seqExpr    
 
   anonFun :: Parser Expr
   anonFun = do
