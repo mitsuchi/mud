@@ -28,3 +28,32 @@ module TypeUtil where
   isConcrete :: DeepList String -> Bool
   isConcrete (Elem a) = isUpper (a!!0)
   isConcrete (Plain xs) = and (map isConcrete xs)
+
+  generalizeTypeSig :: DeepList String -> DeepList String
+  generalizeTypeSig list = gnrlize' list (makeMap (dFlatten list))
+
+  gnrlize' :: DeepList String -> Map String Int -> DeepList String
+  gnrlize' (Elem e) table = case Map.lookup e table of
+    Nothing -> Elem e
+    Just i -> Elem ("t" ++ show i)
+  gnrlize' (Plain []) table = Plain []
+  gnrlize' (Plain (e:es)) table = 
+    let (Plain rest') = (gnrlize' (Plain es) table)
+    in Plain ((gnrlize' e table) : rest')
+
+  makeMap :: [String] -> Map String Int
+  makeMap list = makeMap' list 0 Map.empty
+
+  makeMap' :: [String] -> Int -> Map String Int -> Map String Int
+  makeMap' [] num table = table
+  makeMap' (e:es) num table = if isUpper(e !! 0) then (makeMap' es num table) else 
+    case Map.lookup e table of
+      Nothing -> makeMap' es (num+1) (Map.insert e num table)
+      Just i  -> makeMap' es num table
+
+
+  -- [("r",Plain [Elem "Int"]),("i",Plain [Elem "Int"])]
+  -- を以下に変換する
+  -- Plain [Elem "Int", Elem "Int"]
+  typeDefToTypes :: [(String, DeepList String)] -> DeepList String
+  typeDefToTypes es = Plain (foldMap ((++) . (\(Plain x) -> x) . snd) es [])
