@@ -151,9 +151,9 @@ module Lib where
       , InfixL (BinOp Gtq <$ symbol "=>")
       , InfixL (BinOp Lt <$ symbol "<")
       , InfixL (BinOp Gt <$ symbol ">") ]
+      , [ InfixR (BinOp Equal <$ symbol "==") ]
     , [ InfixL (BinOp And <$ symbol "&&") ]
     , [ InfixL (BinOp Or <$ symbol "||") ]
-    , [ InfixR (BinOp Equal <$ symbol "==") ]
     , [ InfixR (BinOp Eq <$ symbol "=") ]
     ]
   
