@@ -209,7 +209,7 @@ module Lib where
   strLit = do
     char '\''
     str <- many $ noneOf "'"
-    symbol "'"
+    symboln "'"
     return $ StrLit str
 
   listLit :: Parser Expr
