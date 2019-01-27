@@ -1,16 +1,9 @@
 module Lib where
 
-  import Control.Monad (void, forM_)
-  import Control.Monad.Combinators.Expr
   import Data.Void
-  import Data.Char
   import Data.IORef
-  import Data.List (find, intercalate, isInfixOf)
   import Data.Map as Map hiding (map, foldr, take)
-  import Debug.Trace
   import Text.Megaparsec
-  import Text.Megaparsec.Char
-  import qualified Text.Megaparsec.Char.Lexer as L
   
   import DeepList
   import Env  
@@ -19,11 +12,6 @@ module Lib where
   import Parse
   import Primitive
   import TypeUtil
-
-  fromVars :: [Expr] -> [String]
-  fromVars (Var v:[]) = [v]
-  fromVars (Var v:es) = v : fromVars es
-  fromVars (e:es) = fromVars es
   
   parseExpr :: String -> Expr
   parseExpr program = case parse expr "<stdin>" program of
@@ -53,8 +41,3 @@ module Lib where
     env <- newIORef Map.empty
     expr' <- eval expr env
     print expr'  
-
-  showResult :: Either String Env -> IO ()
-  showResult res = case res of
-    Left message -> print message
-    Right env -> showEnv env
