@@ -46,7 +46,7 @@ fun incr : String -> String = x -> x + ' one'
 
 # 同じ関数名でも引数の型によって異なる関数が呼び出される
 incr 2       #=> 3
-incr 'hello'; #=> "hello one"
+incr 'hello' #=> "hello one"
 
 # . 演算子を使うとオブジェクト指向のメソッド呼び出しのように見える
 2.incr       #=> 3
