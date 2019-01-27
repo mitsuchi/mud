@@ -143,17 +143,17 @@ module Lib where
     , [ InfixR (BinOp (OpLit "++") <$ symbol "++")
       , InfixR (BinOp (OpLit "**") <$ symbol "**") ]
     , [ InfixL (BinOp Dot <$ (symbol "." *> notFollowedBy integer)) ]
-    , [ InfixL (BinOp Mul <$ symbol "*")
-      , InfixL (BinOp Div <$ symbol "/") ]
-    , [ InfixL (BinOp Add <$ symbol "+")
-      , InfixL (BinOp Sub <$ symbol "-") ]
-    , [ InfixL (BinOp Ltq <$ symbol "<=")
-      , InfixL (BinOp Gtq <$ symbol "=>")
-      , InfixL (BinOp Lt <$ symbol "<")
-      , InfixL (BinOp Gt <$ symbol ">") ]
-      , [ InfixR (BinOp Equal <$ symbol "==") ]
-    , [ InfixL (BinOp And <$ symbol "&&") ]
-    , [ InfixL (BinOp Or <$ symbol "||") ]
+    , [ InfixL (BinOp (OpLit "*") <$ symbol "*")
+      , InfixL (BinOp (OpLit "/") <$ symbol "/") ]
+    , [ InfixL (BinOp (OpLit "+") <$ symbol "+")
+      , InfixL (BinOp (OpLit "-") <$ symbol "-") ]
+    , [ InfixL (BinOp (OpLit "<=") <$ symbol "<=")
+      , InfixL (BinOp (OpLit "=>") <$ symbol "=>")
+      , InfixL (BinOp (OpLit "<") <$ symbol "<")
+      , InfixL (BinOp (OpLit ">") <$ symbol ">") ]
+    , [ InfixR (BinOp (OpLit "==") <$ symbol "==") ]
+    , [ InfixL (BinOp (OpLit "&&") <$ symbol "&&") ]
+    , [ InfixL (BinOp (OpLit "||") <$ symbol "||") ]
     , [ InfixR (BinOp Eq <$ symbol "=") ]
     ]
   
@@ -328,64 +328,13 @@ module Lib where
     case var of
       Nothing -> error ("'" ++ name ++ "' not found, env = " ++ (show env'))
       Just x -> return x
-  eval (Neg expr) env = eval (BinOp Sub (IntLit 0) expr) env
-  eval (BinOp Add (IntLit i1) (IntLit i2)) env = return $ IntLit (i1+i2)
-  eval (BinOp Add (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1+f2)
-  eval (BinOp Add (StrLit i1) (StrLit i2)) env = return $ StrLit (i1++i2)
-  eval (BinOp Add (ListLit l1) (ListLit l2)) env = return $ ListLit (l1++l2)
-  eval (BinOp Add (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 || b2)
-  eval (BinOp Add (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 + f2)
-  eval (BinOp Add (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1 + fromIntegral i2)
-  eval (BinOp Sub (IntLit i1) (IntLit i2)) env = return $ IntLit (i1-i2)
-  eval (BinOp Sub (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1-f2)
-  eval (BinOp Sub (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 - f2)
-  eval (BinOp Sub (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1- fromIntegral i2)
-  eval (BinOp Mul (IntLit i1) (IntLit i2)) env = return $ IntLit (i1*i2)
-  eval (BinOp Mul (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1*f2)
-  eval (BinOp Mul (StrLit s) (IntLit i)) env = return (StrLit $ (concatMap (\i -> s) [1..i]))
-  eval (BinOp Mul (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 && b2)  
-  eval (BinOp Mul (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 * f2)
-  eval (BinOp Mul (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1* fromIntegral i2)
-  eval (BinOp Div (IntLit i1) (IntLit i2)) env = return $ IntLit (i1 `div` i2)
-  eval (BinOp Div (DoubleLit f1) (DoubleLit f2)) env = return $ DoubleLit (f1/f2)
-  eval (BinOp Div (IntLit i1) (DoubleLit f2)) env = return $ DoubleLit (fromIntegral i1 / f2)
-  eval (BinOp Div (DoubleLit f1) (IntLit i2)) env = return $ DoubleLit (f1/ fromIntegral i2)
+  eval (Neg expr) env = eval (BinOp (OpLit "-") (IntLit 0) expr) env
   eval (BinOp Eq (Var v) e) env = do
     e' <- eval e env
     eval (Assign v e') env  
   eval (BinOp Dot e1 (Var v)) env = eval (Apply (Var v) [e1]) env
   eval (BinOp Dot e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
   eval (BinOp (OpLit lit) e1 e2) env = eval (Apply (Var lit) [e1, e2]) env  
-  eval (BinOp And (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 && b2)  
-  eval (BinOp Or (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 || b2)  
-  eval (BinOp Equal (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 == i2)  
-  eval (BinOp Equal (StrLit s1) (StrLit s2)) env = return $ BoolLit (s1 == s2)
-  eval (BinOp Equal (BoolLit b1) (BoolLit b2)) env = return $ BoolLit (b1 == b2)  
-  eval (BinOp Equal (ListLit l1) (ListLit l2)) env = return $ BoolLit (l1 == l2)  
-  eval (BinOp Lt (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 < i2)
-  eval (BinOp Ltq (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 <= i2)
-  eval (BinOp Gt (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 > i2)
-  eval (BinOp Gtq (IntLit i1) (IntLit i2)) env = return $ BoolLit (i1 >= i2)
-  eval (BinOp Lt (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 < i2)
-  eval (BinOp Ltq (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 <= i2)
-  eval (BinOp Gt (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 > i2)
-  eval (BinOp Gtq (DoubleLit i1) (DoubleLit i2)) env = return $ BoolLit (i1 >= i2)
-  eval (BinOp Lt (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 < i2)
-  eval (BinOp Lt (DoubleLit i1) (IntLit i2)) env = return $ BoolLit (i1 < fromIntegral i2)
-  eval (BinOp Ltq (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 <= i2)
-  eval (BinOp Ltq (DoubleLit i1) (IntLit i2)) env = return $ BoolLit (i1 <= fromIntegral i2)
-  eval (BinOp Gt (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 > i2)
-  eval (BinOp Gt (DoubleLit i1) (IntLit i2)) env = return $ BoolLit ( i1 > fromIntegral i2)
-  eval (BinOp Gtq (IntLit i1) (DoubleLit i2)) env = return $ BoolLit (fromIntegral i1 >= i2)
-  eval (BinOp Gtq (DoubleLit i1) (IntLit i2)) env = return $ BoolLit (i1 >= fromIntegral i2)
-  eval (BinOp Add e1@(StructValue s1) e2) env = eval (Apply (Var "+") [e1, e2]) env
-  eval (BinOp Add e1 e2@(StructValue s1)) env = eval (Apply (Var "+") [e1, e2]) env
-  eval (BinOp Sub e1@(StructValue s1) e2) env = eval (Apply (Var "-") [e1, e2]) env
-  eval (BinOp Sub e1 e2@(StructValue s2)) env = eval (Apply (Var "-") [e1, e2]) env
-  eval (BinOp Mul e1@(StructValue s1) e2) env = eval (Apply (Var "*") [e1, e2]) env
-  eval (BinOp Mul e1 e2@(StructValue s2)) env = eval (Apply (Var "*") [e1, e2]) env
-  eval (BinOp Div e1@(StructValue s1) e2) env = eval (Apply (Var "/") [e1, e2]) env
-  eval (BinOp Div e1 e2@(StructValue s2)) env = eval (Apply (Var "/") [e1, e2]) env  
   eval (BinOp op e1 e2) env = do
     e1' <- eval e1 env
     e2' <- eval e2 env
@@ -467,6 +416,49 @@ module Lib where
     case Map.lookup member structValue of
       Just expr -> return expr
       Nothing -> error ("can't find struct member '" ++ member ++ "'")
+  call "+" [IntLit i1, IntLit i2] env = return $ IntLit (i1+i2)
+  call "+" [DoubleLit f1, DoubleLit f2] env = return $ DoubleLit (f1+f2)
+  call "+" [StrLit i1, StrLit i2] env = return $ StrLit (i1++i2)
+  call "+" [ListLit l1, ListLit l2] env = return $ ListLit (l1++l2)
+  call "+" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 || b2)
+  call "+" [IntLit i1, DoubleLit f2] env = return $ DoubleLit (fromIntegral i1 + f2)
+  call "+" [DoubleLit f1, IntLit i2] env = return $ DoubleLit (f1 + fromIntegral i2)  
+  call "-" [IntLit i1, IntLit i2] env = return $ IntLit (i1-i2)
+  call "-" [DoubleLit f1, DoubleLit f2] env = return $ DoubleLit (f1-f2)
+  call "-" [IntLit i1, DoubleLit f2] env = return $ DoubleLit (fromIntegral i1 - f2)
+  call "-" [DoubleLit f1, IntLit i2] env = return $ DoubleLit (f1 - fromIntegral i2)
+  call "*" [IntLit i1, IntLit i2] env = return $ IntLit (i1*i2)
+  call "*" [DoubleLit f1, DoubleLit f2] env = return $ DoubleLit (f1*f2)
+  call "*" [StrLit s, IntLit i] env = return (StrLit $ (concatMap (\i -> s) [1..i]))
+  call "*" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 && b2)  
+  call "*" [IntLit i1, DoubleLit f2] env = return $ DoubleLit (fromIntegral i1 * f2)
+  call "*" [DoubleLit f1, IntLit i2] env = return $ DoubleLit (f1* fromIntegral i2)
+  call "/" [IntLit i1, IntLit i2] env = return $ IntLit (i1 `div` i2)
+  call "/" [DoubleLit f1, DoubleLit f2] env = return $ DoubleLit (f1/f2)
+  call "/" [IntLit i1, DoubleLit f2] env = return $ DoubleLit (fromIntegral i1 / f2)
+  call "/" [DoubleLit f1, IntLit i2] env = return $ DoubleLit (f1/ fromIntegral i2)
+  call "==" [IntLit i1, IntLit i2] env = return $ BoolLit (i1 == i2)  
+  call "==" [StrLit s1, StrLit s2] env = return $ BoolLit (s1 == s2)
+  call "==" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 == b2)  
+  call "==" [ListLit l1, ListLit l2] env = return $ BoolLit (l1 == l2)    
+  call "<" [IntLit i1, IntLit i2] env = return $ BoolLit (i1 < i2)  
+  call "<" [DoubleLit i1, DoubleLit i2] env = return $ BoolLit (i1 < i2)
+  call "<" [IntLit i1, DoubleLit i2] env = return $ BoolLit (fromIntegral i1 < i2)
+  call "<" [DoubleLit i1, IntLit i2] env = return $ BoolLit (i1 < fromIntegral i2)
+  call "<=" [IntLit i1, IntLit i2] env = return $ BoolLit (i1 <= i2)
+  call "<=" [DoubleLit i1, DoubleLit i2] env = return $ BoolLit (i1 <= i2)
+  call "<=" [IntLit i1, DoubleLit i2] env = return $ BoolLit (fromIntegral i1 <= i2)
+  call "<=" [DoubleLit i1, IntLit i2] env = return $ BoolLit (i1 <= fromIntegral i2)
+  call ">" [IntLit i1, IntLit i2] env = return $ BoolLit (i1 > i2)
+  call ">" [DoubleLit i1, DoubleLit i2] env = return $ BoolLit (i1 > i2)
+  call ">" [IntLit i1, DoubleLit i2] env = return $ BoolLit (fromIntegral i1 > i2)
+  call ">" [DoubleLit i1, IntLit i2] env = return $ BoolLit ( i1 > fromIntegral i2)
+  call ">=" [IntLit i1, IntLit i2] env = return $ BoolLit (i1 >= i2)
+  call ">=" [DoubleLit i1, DoubleLit i2] env = return $ BoolLit (i1 >= i2)
+  call ">=" [IntLit i1, DoubleLit i2] env = return $ BoolLit (fromIntegral i1 >= i2)
+  call ">=" [DoubleLit i1, IntLit i2] env = return $ BoolLit (i1 >= fromIntegral i2)
+  call "&&" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 && b2)  
+  call "||" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 || b2)  
   call name args env = do
     env' <- readIORef env
     error (name ++ " not found, args = " ++ (show args) ++ ", env = " ++ (show env'))
