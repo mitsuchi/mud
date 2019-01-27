@@ -46,9 +46,7 @@ fun incr : String -> String = x -> x + ' one'
 
 # 同じ関数名でも引数の型によって異なる関数が呼び出される
 incr 2       #=> 3
-incr 'hello' #=> "hello one"
-
-'holo'
+incr 'hello'; #=> "hello one"
 
 # . 演算子を使うとオブジェクト指向のメソッド呼び出しのように見える
 2.incr       #=> 3
@@ -94,8 +92,8 @@ fun inc : Int -> Int = x -> x + 1
 (inc.twice.twice.twice) 0      #=> 8
 
 # 関数合成（ユーザー定義）
-fun ++ : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c); 
-(double ++ double ++ inc) 10 #=> 44
+fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c)
+(double * double * inc) 10 #=> 44
 10.inc.double.double       #=> 44
 
 fun select : [a] -> (a -> Bool) -> [a] = {
@@ -112,23 +110,13 @@ fun qsort : [a] -> [a] = {
       es.select (x -> x > e : a -> Bool).qsort
 }
 
-[2,5,1,2,4,3].qsort  #=> [1,2,2,3,4,5]
+[2,5,1,2,4,3].qsort
 
 # パラメトリック多相
 fun id : a -> a = x -> x
 id 1     #=> 1
-id 'one' #=> 'one'
+id 'one' #=> "one"
 
 ## 関数に引数を適用するだけの関数 apply
 fun apply : (a->a) -> a -> a = f x -> f x
 apply inc 0 #=> 1
-
-## 関数を二回適用する関数を作る関数 twice
-(twice inc) 0 #=> 2
-(twice (twice (twice inc))) 0 #=> 8
-
-## 関数合成
-(inc ++ double) 1       #=> 3
-(double ++ inc) 1       #=> 4
-(inc ++ double ++ inc) 1 #=> 5
-1.inc.double.inc       #=> 5   素直に . 記法を使ったほうが読みやすい
