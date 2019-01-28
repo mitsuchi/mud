@@ -1,6 +1,7 @@
 module Eval where
 
   import Control.Monad (forM_)
+  import Control.Monad.Except
   import Data.IORef
   import Data.List (find)
   import Data.Map as Map hiding (map, foldr, take)
@@ -11,7 +12,9 @@ module Eval where
   import Primitive
   import TypeUtil
 
-  eval :: Expr -> Env -> IO Expr
+  type IOThrowsError = ExceptT String IO
+
+  eval :: Expr -> Env -> IOThrowsError Expr
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
   eval (DoubleLit f) env = return $ DoubleLit f
@@ -21,11 +24,11 @@ module Eval where
   eval (Var "True" _) env = return $ BoolLit True
   eval (Var "False" _) env = return $ BoolLit False
   eval (Var name c) env = do
-    var <- lookupVarLoose name env
-    env' <- readIORef env
+    var <- liftIO $ lookupVarLoose name env
+    env' <- liftIO $ readIORef env
     case var of
-      -- Nothing -> error ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found, env = " ++ (show env'))
-      Nothing -> error ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found")
+      -- Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found, env = " ++ (show env'))
+      Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found")
       Just x -> return x
   eval (Neg expr) env = eval (BinOp (OpLit "-") (IntLit 0) expr) env
   eval (BinOp Eq (Var v _) e) env = do
@@ -43,29 +46,29 @@ module Eval where
     eval e env
     eval (Seq es) env
   eval (Assign name fun@(Fun types params expr outerEnv)) env = do
-    res <- insertFun name types fun env
+    res <- liftIO $ insertFun name types fun env
     case res of
-      Left message -> error message
+      Left message -> throwError message
       Right env -> return expr
   eval (Assign name expr) env = do
-    res <- insertVar name expr env
+    res <- liftIO $ insertVar name expr env
     case res of
-      Left message -> error message
+      Left message -> throwError message
       Right env -> return expr
   eval (FunDef name types params body) env = do
     eval (Assign name (Fun types params body env)) env  
   eval (FunDefAnon types params body) env = do
     return $ Fun types params body env
   eval (Apply (Fun types params body outerEnv) args) env = do
-    varMap <- readIORef outerEnv
-    env' <- newEnv params args varMap
+    varMap <- liftIO $ readIORef outerEnv
+    env' <- liftIO $ newEnv params args varMap
     eval body env'
   eval (Apply (Var name _) args) env = do
     args' <- mapM (\arg -> eval arg env) args
-    fun' <- lookupFun name (Plain (map typeOf' args')) env
+    fun' <- liftIO $ lookupFun name (Plain (map typeOf' args')) env
     case fun' of
       Just fun -> eval (Apply fun args') env
-      Nothing -> call name args' env
+      Nothing -> liftIO $ call name args' env
   eval (Apply expr args) env = do
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
@@ -75,14 +78,14 @@ module Eval where
     case find (\pair -> matchCond es' (fst pair)) matchPairs of
       Just pair -> let (params, args) = paramsAndArgs (fst pair) es'
                    in eval (Apply (Fun types params (snd pair) env) args) env
-      Nothing   -> error "condition no match"
+      Nothing   -> throwError "condition no match"
   eval expr@(TypeSig sig (Var name _)) env = do
-    fun' <- lookupFun name sig env
+    fun' <- liftIO $ lookupFun name sig env
     case fun' of
       Just fun -> return fun
       Nothing -> do
-        env' <- readIORef env
-        error (name ++ " not found , env = " ++ (show env'))
+        env' <- liftIO $ readIORef env
+        throwError (name ++ " not found , env = " ++ (show env'))
   eval (TypeSig sig expr) env = eval expr env
   eval (If condExpr thenExpr elseExpr) env = do
     cond' <- eval condExpr env

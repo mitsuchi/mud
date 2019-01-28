@@ -1,5 +1,6 @@
 module Lib where
 
+  import Control.Monad.Except
   import Data.Void
   import Data.IORef
   import Data.Map as Map hiding (map, foldr, take)
@@ -25,7 +26,7 @@ module Lib where
   ev program = case pa program of
     Right expr -> runEval expr
     Left bundle -> putStr (errorBundlePretty bundle)
-  
+
   evf :: String -> IO ()
   evf file = do 
     program <- readFile file
@@ -39,5 +40,7 @@ module Lib where
   runEval :: Expr -> IO ()
   runEval expr = do
     env <- newIORef Map.empty
-    expr' <- eval expr env
-    print expr'  
+    expr' <- runExceptT (eval expr env)
+    case expr' of 
+      Right val -> print val
+      Left error -> print error
