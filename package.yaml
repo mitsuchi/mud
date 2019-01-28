@@ -1,6 +1,6 @@
-name:                fuga
+name:                mud
 version:             0.1.0.0
-github:              "githubuser/fuga"
+github:              "githubuser/mud"
 license:             BSD3
 author:              "Author name here"
 maintainer:          "example@example.com"
@@ -17,19 +17,20 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/fuga#readme>
+description:         Please see the README on GitHub at <https://github.com/githubuser/mud#readme>
 
 dependencies:
 - base >= 4.7 && < 5
 - megaparsec >= 7.0
 - parser-combinators >= 1.0
 - containers >= 0.6
+- mtl >= 2.2
 
 library:
   source-dirs: src
 
 executables:
-  fuga-exe:
+  mud:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -37,10 +38,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - fuga
+    - mud
 
 tests:
-  fuga-test:
+  mud-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -48,4 +49,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - fuga
+    - mud

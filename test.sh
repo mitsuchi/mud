@@ -3,7 +3,7 @@ try() {
   expected="$1"
   input="$2"
 
-  actual=`echo "$input" | fuga-exe`
+  actual=`echo "$input" | mud`
 
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"

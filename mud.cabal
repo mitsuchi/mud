@@ -1,0 +1,81 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: d7f98edacd15c4412cb99a671c5a897a5cad2cdccea2491888cc6821d14d22cb
+
+name:           mud
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/mud#readme>
+homepage:       https://github.com/githubuser/mud#readme
+bug-reports:    https://github.com/githubuser/mud/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2019 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/mud
+
+library
+  exposed-modules:
+      DeepList
+      Env
+      Eval
+      Expr
+      Lib
+      Parse
+      Primitive
+      TypeUtil
+  other-modules:
+      Paths_mud
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , containers >=0.6
+    , megaparsec >=7.0
+    , mtl >=2.2
+    , parser-combinators >=1.0
+  default-language: Haskell2010
+
+executable mud
+  main-is: Main.hs
+  other-modules:
+      Paths_mud
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , containers >=0.6
+    , megaparsec >=7.0
+    , mtl >=2.2
+    , mud
+    , parser-combinators >=1.0
+  default-language: Haskell2010
+
+test-suite mud-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_mud
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , containers >=0.6
+    , megaparsec >=7.0
+    , mtl >=2.2
+    , mud
+    , parser-combinators >=1.0
+  default-language: Haskell2010
