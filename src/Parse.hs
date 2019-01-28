@@ -88,8 +88,8 @@ module Parse where
     <|> arg
     <|> try ifExpr
     <|> try funDefCase  
-    <|> try fundef
-    <|> try typeDef
+    <|> fundef
+    <|> typeDef
   
   arg :: Parser Expr
   arg = try (DoubleLit <$> double)
@@ -185,7 +185,7 @@ module Parse where
   fundef :: Parser Expr
   fundef = do
     rword "fun"
-    name <- try identifier <|> try operator
+    name <- try identifier <|> operator
     symbol ":"
     types <- typeList
     symbol "="
