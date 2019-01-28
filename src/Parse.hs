@@ -2,6 +2,7 @@ module Parse where
 
   import Control.Monad (void)
   import Control.Monad.Combinators.Expr
+  import Debug.Trace
   import Data.Void
   import Text.Megaparsec
   import Text.Megaparsec.Char
@@ -94,7 +95,7 @@ module Parse where
   arg = try (DoubleLit <$> double)
     <|> IntLit <$> integer
     <|> strLit
-    <|> Var <$> identifier
+    <|> Var <$> identifier <*> getCode
     <|> listLit
     <|> try (parens argWithTypeSig)
     <|> parens expr
@@ -208,7 +209,7 @@ module Parse where
       where 
         paramNum matches = length (fst (head matches))
         paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
-        varList n = map Var (paramList n)
+        varList n = map (\v -> Var v (Code { lineOfCode = 1 })) (paramList n)
 
   ifExpr :: Parser Expr
   ifExpr = do
@@ -230,7 +231,7 @@ module Parse where
   
   apply :: Parser Expr
   apply = do
-    caller <- parens expr <|> (Var <$> identifier)
+    caller <- parens expr <|> (Var <$> identifier <*> getCode)
     args <- some arg
     return $ Apply caller args
 
@@ -251,3 +252,8 @@ module Parse where
     term <- identifier
     symbol "]"
     return $ Plain [ Elem "List", Elem term ]    
+  
+  getCode :: Parser Code
+  getCode = do
+    pos <- getSourcePos
+    return $ Code { lineOfCode = unPos (sourceLine pos) }

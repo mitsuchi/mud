@@ -14,11 +14,14 @@ module Expr where
   type Type = String
   type Env = GeneralEnv Expr
 
+  data Code = Code { lineOfCode :: Int } deriving (Show)
+  emptyCode = Code { lineOfCode = 0 }
+
   data Expr
     = IntLit Integer
     | StrLit String
     | DoubleLit Double
-    | Var Name
+    | Var Name Code
     | BinOp Op Expr Expr
     | Seq [Expr]
     | Assign Name Expr
@@ -60,7 +63,7 @@ module Expr where
     show (StrLit str) = str
     show (DoubleLit f) = show f
     show (Neg e) = "-" ++ show e
-    show (Var name) = name
+    show (Var name _) = name
     show (BinOp op e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
     show (Fun types params body env) = "function : " ++ (show types)
@@ -98,21 +101,21 @@ module Expr where
 
   matchCond :: [Expr] -> [Expr] -> Bool
   matchCond (IntLit i:e1s) (IntLit j:e2s) = i == j && matchCond e1s e2s
-  matchCond ((IntLit i):e1s) ((Var v):e2s) = matchCond e1s e2s
+  matchCond ((IntLit i):e1s) ((Var v _):e2s) = matchCond e1s e2s
   matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) = i == j && matchCond e1s e2s
-  matchCond ((DoubleLit i):e1s) ((Var v):e2s) = matchCond e1s e2s  
-  matchCond ((ListLit l1):e1s) ((ListLit [Var h, Var t]):e2s) = matchCond e1s e2s
+  matchCond ((DoubleLit i):e1s) ((Var v _):e2s) = matchCond e1s e2s  
+  matchCond ((ListLit l1):e1s) ((ListLit [Var h _, Var t _]):e2s) = matchCond e1s e2s
   matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) = l1 == l2 && matchCond e1s e2s
-  matchCond ((ListLit l):e1s) ((Var v):e2s) = matchCond e1s e2s
-  matchCond ((Fun _ _ _ _):e1s) ((Var v):e2s) = matchCond e1s e2s
+  matchCond ((ListLit l):e1s) ((Var v _):e2s) = matchCond e1s e2s
+  matchCond ((Fun _ _ _ _):e1s) ((Var v _):e2s) = matchCond e1s e2s
   matchCond [] [] = True
   matchCond e1 e2 = trace ("matchCond: " ++ show (e1,e2)) $ False
 
   paramsAndArgs :: [Expr] -> [Expr] -> ([String], [Expr])
   paramsAndArgs [] [] = ([],[])
-  paramsAndArgs (Var v:e1s) (e:e2s) = let rests = paramsAndArgs e1s e2s
+  paramsAndArgs ((Var v _):e1s) (e:e2s) = let rests = paramsAndArgs e1s e2s
                                       in (v : (fst rests), e : (snd rests))
-  paramsAndArgs (ListLit [Var h,Var t]:e1s) (ListLit (e2:e2'):e2s) = 
+  paramsAndArgs (ListLit [(Var h _),(Var t _)]:e1s) (ListLit (e2:e2'):e2s) = 
     let rests = paramsAndArgs e1s e2s
     in (h : t : (fst rests), e2 : (ListLit e2') : (snd rests))
   paramsAndArgs (e1:e1s) (e2:e2s) = paramsAndArgs e1s e2s

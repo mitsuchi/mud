@@ -18,21 +18,22 @@ module Eval where
   eval (ListLit es) env = do
     es' <- mapM (\e -> eval e env) es
     return $ ListLit es'
-  eval (Var "True") env = return $ BoolLit True
-  eval (Var "False") env = return $ BoolLit False
-  eval (Var name) env = do
+  eval (Var "True" _) env = return $ BoolLit True
+  eval (Var "False" _) env = return $ BoolLit False
+  eval (Var name c) env = do
     var <- lookupVarLoose name env
     env' <- readIORef env
     case var of
-      Nothing -> error ("'" ++ name ++ "' not found, env = " ++ (show env'))
+      -- Nothing -> error ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found, env = " ++ (show env'))
+      Nothing -> error ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found")
       Just x -> return x
   eval (Neg expr) env = eval (BinOp (OpLit "-") (IntLit 0) expr) env
-  eval (BinOp Eq (Var v) e) env = do
+  eval (BinOp Eq (Var v _) e) env = do
     e' <- eval e env
     eval (Assign v e') env  
-  eval (BinOp Dot e1 (Var v)) env = eval (Apply (Var v) [e1]) env
+  eval (BinOp Dot e1 (Var v c)) env = eval (Apply (Var v c) [e1]) env
   eval (BinOp Dot e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
-  eval (BinOp (OpLit lit) e1 e2) env = eval (Apply (Var lit) [e1, e2]) env  
+  eval (BinOp (OpLit lit) e1 e2) env = eval (Apply (Var lit emptyCode) [e1, e2]) env  
   eval (BinOp op e1 e2) env = do
     e1' <- eval e1 env
     e2' <- eval e2 env
@@ -59,7 +60,7 @@ module Eval where
     varMap <- readIORef outerEnv
     env' <- newEnv params args varMap
     eval body env'
-  eval (Apply (Var name) args) env = do
+  eval (Apply (Var name _) args) env = do
     args' <- mapM (\arg -> eval arg env) args
     fun' <- lookupFun name (Plain (map typeOf' args')) env
     case fun' of
@@ -75,7 +76,7 @@ module Eval where
       Just pair -> let (params, args) = paramsAndArgs (fst pair) es'
                    in eval (Apply (Fun types params (snd pair) env) args) env
       Nothing   -> error "condition no match"
-  eval expr@(TypeSig sig (Var name)) env = do
+  eval expr@(TypeSig sig (Var name _)) env = do
     fun' <- lookupFun name sig env
     case fun' of
       Just fun -> return fun
@@ -90,8 +91,8 @@ module Eval where
       BoolLit False -> eval elseExpr env
   eval (TypeDef name typeDef) env = do
     forM_ typeDef $ \(member, (Plain [typeList])) -> do
-      eval (FunDef member (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct") [Var "x", StrLit member])) env
-    eval (FunDef name types params (Apply (Var "makeStruct") (StrLit name : map StrLit params))) env    
+      eval (FunDef member (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct" emptyCode) [Var "x" emptyCode, StrLit member])) env
+    eval (FunDef name types params (Apply (Var "makeStruct" emptyCode) (StrLit name : map StrLit params))) env    
     where types = typeDefToTypes typeDef
           params = map fst typeDef
   eval value@(StructValue structValue) env = return value
