@@ -3,7 +3,7 @@ try() {
   expected="$1"
   input="$2"
 
-  actual=`echo "$input" | mud`
+  actual=`mud eval "$input"`
 
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
