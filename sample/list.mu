@@ -13,6 +13,15 @@ fun reverse : [a] -> [a] = {
   [h,t] -> reverse t + [h]
 }
 
+fun uniq : [a] -> [a] = {
+  []     -> []
+  [e,es] -> if es == []
+    then [e]
+    else if (e == es.head)
+      then (uniq es)
+      else [e] + (uniq es)
+}
+
 fun select : [a] -> (a -> Bool) -> [a] = {
   []    f -> []
   [h,t] f -> if (h.f)
@@ -41,3 +50,11 @@ foldr [1,2,3,4,5] (x y -> x + y : a -> a) 0
 foldr [1,2,3,4,5] (x y -> x * y : a -> a) 1
 sum [1,2,3,4,5]
 product [1,2,3,4,5]
+
+uniq (reverse (qsort [5,4,1,3,5,2,2]))
+
+[5,4,1,3,5,2,2].qsort.reverse.uniq
+
+fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c)
+
+(uniq * reverse * qsort) [5,4,1,3,5,2,2,6]
