@@ -162,7 +162,7 @@ module Parse where
   topLevel = do
     sc
     many newLine
-    exprs <- many exprNewLine
+    exprs <- some exprNewLine
     return $ Seq exprs
 
   typeDef :: Parser Expr
