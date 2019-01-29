@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f2613ec590b940bf60d8c32062349d525fb74e819116de2895f12e58e6b15e8c
+-- hash: 3e421dcf555a94633420189b702dc9acbc3768955a25debac758e0fa40f84834
 
 name:           mud
 version:        0.1.0.0
@@ -31,7 +31,6 @@ library
       Env
       Eval
       Expr
-      Hoge
       Lib
       Parse
       Primitive
