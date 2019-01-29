@@ -25,6 +25,9 @@ dependencies:
 - parser-combinators >= 1.0
 - containers >= 0.6
 - mtl >= 2.2
+- HUnit >= 1.6
+- test-framework >= 0.8
+- test-framework-hunit >= 0.3
 
 library:
   source-dirs: src

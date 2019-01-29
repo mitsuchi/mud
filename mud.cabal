@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d7f98edacd15c4412cb99a671c5a897a5cad2cdccea2491888cc6821d14d22cb
+-- hash: f2613ec590b940bf60d8c32062349d525fb74e819116de2895f12e58e6b15e8c
 
 name:           mud
 version:        0.1.0.0
@@ -31,6 +31,7 @@ library
       Env
       Eval
       Expr
+      Hoge
       Lib
       Parse
       Primitive
@@ -40,11 +41,14 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      HUnit >=1.6
+    , base >=4.7 && <5
     , containers >=0.6
     , megaparsec >=7.0
     , mtl >=2.2
     , parser-combinators >=1.0
+    , test-framework >=0.8
+    , test-framework-hunit >=0.3
   default-language: Haskell2010
 
 executable mud
@@ -55,12 +59,15 @@ executable mud
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HUnit >=1.6
+    , base >=4.7 && <5
     , containers >=0.6
     , megaparsec >=7.0
     , mtl >=2.2
     , mud
     , parser-combinators >=1.0
+    , test-framework >=0.8
+    , test-framework-hunit >=0.3
   default-language: Haskell2010
 
 test-suite mud-test
@@ -72,10 +79,13 @@ test-suite mud-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HUnit >=1.6
+    , base >=4.7 && <5
     , containers >=0.6
     , megaparsec >=7.0
     , mtl >=2.2
     , mud
     , parser-combinators >=1.0
+    , test-framework >=0.8
+    , test-framework-hunit >=0.3
   default-language: Haskell2010

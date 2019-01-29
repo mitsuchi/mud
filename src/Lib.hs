@@ -14,11 +14,6 @@ module Lib where
   import Parse
   import Primitive
   import TypeUtil
-  
-  parseExpr :: String -> Expr
-  parseExpr program = case parse expr "<stdin>" program of
-    Right expr -> expr
-    Left bundle -> error (errorBundlePretty bundle)  
 
   pa :: String -> Either (ParseErrorBundle String Void) Expr
   pa program = parse topLevel "<stdin>" program
@@ -74,3 +69,26 @@ module Lib where
 
   flushStr :: String -> IO ()
   flushStr str = putStr str >> hFlush stdout
+
+  help :: IO ()
+  help = putStrLn $ "Mud is a functional programming language that supports multiple dispatch.\n"
+    ++ "\n"
+    ++ "Usage:\n"
+    ++ "\n"
+    ++ "        mud command [arguments]\n"
+    ++ "\n"
+    ++ "The commands are:\n"
+    ++ "\n"
+    ++ "        go      run Mud program\n"
+    ++ "        eval    run one liner program\n"
+    ++ "        repl    run read-eval-print loop\n"
+
+  execParse :: [String] -> IO ()
+  execParse ["parse", program] = case pa program of
+    Right expr -> putStrLn (show expr)
+    Left bundle -> putStrLn (errorBundlePretty bundle)
+
+  parseEval :: String -> IO String
+  parseEval program = do
+    env <- newIORef Map.empty
+    evalString env program
