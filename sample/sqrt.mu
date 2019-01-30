@@ -1,4 +1,4 @@
-mfun sqrt : a -> a = x -> {
+fun sqrt : a -> a = x -> {
   sqrtIter 1.0 x
 }
 
