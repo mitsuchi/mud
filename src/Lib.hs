@@ -38,8 +38,8 @@ module Lib where
     env <- newIORef Map.empty
     expr' <- runExceptT (eval expr env)
     case expr' of 
-      Right val -> print val
-      Left error -> print error
+      Right val -> putStrLn (show val)
+      Left error -> putStrLn error
 
   repl :: IO ()
   repl = do
