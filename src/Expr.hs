@@ -4,6 +4,7 @@ module Expr where
   import Data.IORef
   import Data.List (intercalate)
   import Data.Map as Map hiding (map, foldr, take)
+  import Data.Maybe
   import Debug.Trace
 
   import DeepList
@@ -77,14 +78,19 @@ module Expr where
     show (Case exprs matches types) = "(Case " ++ (show matches) ++ ")"
     show (TypeDef name types) = "(TypeDef " ++ name ++ " " ++ show types ++ ")"
     show (StructType types) = "(StructType " ++ show types ++ ")"
-    show (StructValue structValue) = "(StructValue " ++ show structValue ++ ")"
-
+    show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ Map.lookup "type" sv)) sv
+      where f k a result = if k == "type" then result else result ++ " " ++ k ++ ":" ++ (show a)
+  
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
     (StrLit s1) == (StrLit s2) = s1 == s2
     (ListLit l1) == (ListLit l2) = l1 == l2
     (BoolLit b1) == (BoolLit b2) = b1 == b2
     e1 == e2 = trace (show (e1,e2)) $ False
+
+  -- showMembers :: Map String Expr -> String
+  -- showMembers Map.empty = ""
+  -- showMembers 
 
   typeOf' :: Expr -> DeepList String
   typeOf' (IntLit i) = Elem "Int"
