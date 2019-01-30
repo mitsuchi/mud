@@ -16,12 +16,12 @@ module Env where
   lookupVar' :: String -> GeneralEnv a -> Bool -> IO (Maybe a)
   lookupVar' name env loose = do
     env' <- readIORef env
-    case Map.lookup name env' of
-      Nothing -> return Nothing
-      Just vars -> case vars of
-        (Elem "_", expr):[] -> return $ Just expr
+    return $ do
+      vars <- Map.lookup name env'
+      case vars of
+        (Elem "_", expr):[] -> Just expr
         -- 変数として名前がなくても関数として1つだけ名前があるならそれを参照する
-        (Plain _, expr):[] -> return $ if loose then Just expr else Nothing
+        (Plain _, expr):[] -> if loose then Just expr else Nothing
 
   -- 関数を環境に登録する
   -- 同名の変数も、同型の関数もない場合のみ登録できる
