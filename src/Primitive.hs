@@ -1,9 +1,11 @@
 module Primitive where
 
   import Control.Monad.Except
-  import Data.Map as Map
+  import Data.List
+  import Data.Map as Map hiding (map)
   import Data.IORef
 
+  import DeepList
   import Env
   import Expr
   
@@ -63,9 +65,7 @@ module Primitive where
   call "&&" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 && b2)  
   call "||" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 || b2)  
   call name args env = do
-    -- env' <- readIORef env
-    -- error (name ++ " not found, args = " ++ (show args) ++ ", env = " ++ (show env'))
-    throwError ("function '" ++ name ++ "' not found")
+    throwError ("function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow (map typeOf' args)) ++ " -> ?' not found")
 
   makeStruct :: [Expr] -> Map Name Expr -> Env -> IO Expr
   makeStruct [] m env = return $ StructValue m
