@@ -79,7 +79,7 @@ module Lib where
     ++ "\n"
     ++ "The commands are:\n"
     ++ "\n"
-    ++ "        go      run Mud program\n"
+    ++ "        run     run Mud program\n"
     ++ "        eval    run one liner program\n"
     ++ "        repl    run read-eval-print loop\n"
 
