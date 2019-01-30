@@ -56,13 +56,13 @@ module Env where
   lookupFun :: String -> DeepList String -> GeneralEnv a -> IO (Maybe a)
   lookupFun name types env = do
     env' <- readIORef env
-    case Map.lookup name env' of
-      Nothing -> return Nothing
-      Just funs -> case funs of
-        (Elem "_", expr):[] -> return Nothing
-        otherwise -> case firstMatch (generalizeTypeSig types) funs of
-          Nothing -> return Nothing
-          Just fun -> return $ Just fun
+    return $ do
+      funs <- Map.lookup name env'
+      case funs of
+        (Elem "_", expr):[] -> Nothing
+        otherwise -> do
+          fun <- firstMatch (generalizeTypeSig types) funs
+          return fun
 
   firstMatch :: DeepList String -> [(DeepList String, a)] -> Maybe a
   firstMatch types [] = Nothing
