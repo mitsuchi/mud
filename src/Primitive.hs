@@ -1,23 +1,24 @@
 module Primitive where
 
+  import Control.Monad.Except
   import Data.Map as Map
   import Data.IORef
 
   import Env
   import Expr
   
-  call :: Name -> [Expr] -> Env -> IO Expr
+  call :: Name -> [Expr] -> Env -> ExceptT String IO Expr
   call "head" [ListLit (e:es)] env = return e
   call "tail" [ListLit (e:es)] env = return $ ListLit es
   call "puts" [e] env = do
-    print e
+    lift $ putStrLn (show e)
     return e
   call "makeStruct" (name:args) env = do
-    makeStruct args (Map.fromList [("type", name)]) env
+    lift $ makeStruct args (Map.fromList [("type", name)]) env
   call "lookupStruct" [StructValue structValue, StrLit member] env = do
     case Map.lookup member structValue of
       Just expr -> return expr
-      Nothing -> error ("can't find struct member '" ++ member ++ "'")
+      Nothing -> throwError ("can't find struct member '" ++ member ++ "'")
   call "+" [IntLit i1, IntLit i2] env = return $ IntLit (i1+i2)
   call "+" [DoubleLit f1, DoubleLit f2] env = return $ DoubleLit (f1+f2)
   call "+" [StrLit i1, StrLit i2] env = return $ StrLit (i1++i2)
@@ -62,9 +63,9 @@ module Primitive where
   call "&&" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 && b2)  
   call "||" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 || b2)  
   call name args env = do
-    env' <- readIORef env
+    -- env' <- readIORef env
     -- error (name ++ " not found, args = " ++ (show args) ++ ", env = " ++ (show env'))
-    error ("function '" ++ name ++ "' not found")
+    throwError ("function '" ++ name ++ "' not found")
 
   makeStruct :: [Expr] -> Map Name Expr -> Env -> IO Expr
   makeStruct [] m env = return $ StructValue m

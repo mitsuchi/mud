@@ -68,7 +68,7 @@ module Eval where
     fun' <- liftIO $ lookupFun name (Plain (map typeOf' args')) env
     case fun' of
       Just fun -> eval (Apply fun args') env
-      Nothing -> liftIO $ call name args' env
+      Nothing -> call name args' env
   eval (Apply expr args) env = do
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
