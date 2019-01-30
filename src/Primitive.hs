@@ -63,7 +63,8 @@ module Primitive where
   call "||" [BoolLit b1, BoolLit b2] env = return $ BoolLit (b1 || b2)  
   call name args env = do
     env' <- readIORef env
-    error (name ++ " not found, args = " ++ (show args) ++ ", env = " ++ (show env'))
+    -- error (name ++ " not found, args = " ++ (show args) ++ ", env = " ++ (show env'))
+    error ("function '" ++ name ++ "' not found")
 
   makeStruct :: [Expr] -> Map Name Expr -> Env -> IO Expr
   makeStruct [] m env = return $ StructValue m

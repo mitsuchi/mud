@@ -85,7 +85,8 @@ module Eval where
       Just fun -> return fun
       Nothing -> do
         env' <- liftIO $ readIORef env
-        throwError (name ++ " not found , env = " ++ (show env'))
+        -- throwError (name ++ " not found , env = " ++ (show env'))
+        throwError ("function '" ++ name ++ "' not found")
   eval (TypeSig sig expr) env = eval expr env
   eval (If condExpr thenExpr elseExpr) env = do
     cond' <- eval condExpr env
