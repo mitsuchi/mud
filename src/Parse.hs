@@ -129,9 +129,9 @@ module Parse where
 
   strLit :: Parser Expr
   strLit = do
-    char '\''
-    str <- many $ noneOf "'"
-    symboln "'"
+    beginChar <- char '"' <|> char '\''
+    str <- many $ noneOf (beginChar : "")
+    symboln (beginChar : "")
     return $ StrLit str
 
   listLit :: Parser Expr
