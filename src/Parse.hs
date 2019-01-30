@@ -172,6 +172,7 @@ module Parse where
     symbol "="
     symbol "{"
     types <- sepBy1 memberWithType (symbol ",")
+    many newLine
     symbol "}"
     return $ TypeDef name types
 
