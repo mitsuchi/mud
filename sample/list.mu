@@ -44,17 +44,17 @@ fun foldr : [a] -> (a->b->b) -> a -> b = {
 fun sum : [a] -> a = es -> foldr es (x y -> x + y : a -> a) 0
 fun product : [a] -> a = es -> foldr es (x y -> x * y : a -> a) 1
 
-[4,1,5,3,2].qsort.reverse
+[4,1,5,3,2].qsort.reverse.puts
 
-foldr [1,2,3,4,5] (x y -> x + y : a -> a) 0
-foldr [1,2,3,4,5] (x y -> x * y : a -> a) 1
-sum [1,2,3,4,5]
-product [1,2,3,4,5]
+puts (foldr [1,2,3,4,5] (x y -> x + y : a -> a) 0)
+puts (foldr [1,2,3,4,5] (x y -> x * y : a -> a) 1)
+puts (sum [1,2,3,4,5])
+puts (product [1,2,3,4,5])
 
-uniq (reverse (qsort [5,4,1,3,5,2,2]))
+puts (uniq (reverse (qsort [5,4,1,3,5,2,2])))
 
-[5,4,1,3,5,2,2].qsort.reverse.uniq
+[5,4,1,3,5,2,2].qsort.reverse.uniq.puts
 
 fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c)
 
-(uniq * reverse * qsort) [5,4,1,3,5,2,2,6]
+puts ((uniq * reverse * qsort) [5,4,1,3,5,2,2,6])

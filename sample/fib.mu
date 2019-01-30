@@ -3,4 +3,5 @@ fun fib : Int -> Int = {
   2 -> 2
   n -> fib (n-1) + fib (n-2)
 }
-fib 10
+
+puts (fib 10)

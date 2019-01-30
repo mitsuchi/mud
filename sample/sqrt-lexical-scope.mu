@@ -15,4 +15,4 @@ fun sqrt : a -> a = x -> {
   sqrtIter 1.0 x
 }
 
-sqrt 2.0
+puts (sqrt 2.0)

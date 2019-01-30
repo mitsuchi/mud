@@ -14,4 +14,4 @@ fun foldr : (a->b->b) -> b -> [a] -> b = {
   f a [x,xs]  -> f x (foldr f a xs)
 }
 
-isort [3,5,4,1,2] #=> [1,2,3,4,5]
+puts (isort [3,5,4,1,2]) #=> [1,2,3,4,5]

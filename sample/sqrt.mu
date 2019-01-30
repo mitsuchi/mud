@@ -20,4 +20,4 @@ fun average : a -> a -> a = x y -> (x+y)/2.0
 
 fun abs : a -> a = x -> if x < 0 then -x else x
 
-sqrt 2.0
+puts (sqrt 2.0)

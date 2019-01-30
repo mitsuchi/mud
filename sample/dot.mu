@@ -3,4 +3,4 @@ puts (10.inc)
 
 fun add : Int -> Int = x y -> x + y
 puts (1.add 2)
-1.add 2.add 3
+puts (1.add 2.add 3)
