@@ -31,7 +31,7 @@ execRun :: [String] -> IO ()
 execRun ["run", filename] = do
       withFile filename ReadMode $ \handle -> do
         contents <- hGetContents handle
-        ev contents
+        evalOnly contents
 execRun ["run"] = putStrLn $ "mud run: run Mud program\n"
   ++ "\n"
   ++ "Usage:\n"

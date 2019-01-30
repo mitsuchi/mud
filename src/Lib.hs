@@ -23,6 +23,11 @@ module Lib where
     Right expr -> runEval expr
     Left bundle -> putStr (errorBundlePretty bundle)
 
+  evalOnly :: String -> IO ()
+  evalOnly program = case pa program of
+    Right expr -> runEvalOnly expr
+    Left bundle -> putStr (errorBundlePretty bundle)
+
   evf :: String -> IO ()
   evf file = do 
     program <- readFile file
@@ -39,6 +44,14 @@ module Lib where
     expr' <- runExceptT (eval expr env)
     case expr' of 
       Right val -> putStrLn (show val)
+      Left error -> putStrLn error
+
+  runEvalOnly :: Expr -> IO ()
+  runEvalOnly expr = do
+    env <- newIORef Map.empty
+    expr' <- runExceptT (eval expr env)
+    case expr' of 
+      Right val -> putStr ""
       Left error -> putStrLn error
 
   repl :: IO ()
