@@ -35,7 +35,7 @@ module Env where
       insertFun' name (generalizeTypeSig types) expr env
       return $ Right env
     else
-      return $ Left (name ++ " already exists"  )
+      return $ Left ("function '" ++ name ++ "' already exists"  )
 
   insertFun' :: String -> DeepList String -> a -> GeneralEnv a -> IO (GeneralEnv a)
   insertFun' name types expr env = do
@@ -77,7 +77,7 @@ module Env where
     e <- anyExists name env
     if not e
     then insertVarForce name expr env
-    else return $ Left (name ++ " already exists")
+    else return $ Left ("variable '" ++ name ++ "' already exists")
 
   insertVarForce :: String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
   insertVarForce name expr env = do
