@@ -30,17 +30,17 @@ module Eval where
       -- Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found, env = " ++ (show env'))
       Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found")
       Just x -> return x
-  eval (Neg expr) env = eval (BinOp (OpLit "-") (IntLit 0) expr) env
-  eval (BinOp Eq (Var v _) e) env = do
+  eval (Neg expr) env = eval (BinOp (OpLit "-") emptyCode (IntLit 0) expr) env
+  eval (BinOp Eq _ (Var v _) e) env = do
     e' <- eval e env
     eval (Assign v e') env  
-  eval (BinOp Dot e1 (Var v c)) env = eval (Apply (Var v c) [e1]) env
-  eval (BinOp Dot e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
-  eval (BinOp (OpLit lit) e1 e2) env = eval (Apply (Var lit emptyCode) [e1, e2]) env  
-  eval (BinOp op e1 e2) env = do
+  eval (BinOp Dot _ e1 (Var v c)) env = eval (Apply (Var v c) [e1]) env
+  eval (BinOp Dot _ e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
+  eval (BinOp (OpLit lit) code e1 e2) env = eval (Apply (Var lit code) [e1, e2]) env  
+  eval (BinOp op code e1 e2) env = do
     e1' <- eval e1 env
     e2' <- eval e2 env
-    eval (BinOp op e1' e2') env
+    eval (BinOp op code e1' e2') env
   eval (Seq (e:[])) env = eval e env
   eval (Seq (e:es)) env = do
     eval e env
@@ -63,12 +63,12 @@ module Eval where
     varMap <- liftIO $ readIORef outerEnv
     env' <- liftIO $ newEnv params args varMap
     eval body env'
-  eval (Apply (Var name _) args) env = do
+  eval (Apply (Var name code) args) env = do
     args' <- mapM (\arg -> eval arg env) args
     fun' <- liftIO $ lookupFun name (Plain (map typeOf' args')) env
     case fun' of
       Just fun -> eval (Apply fun args') env
-      Nothing -> call name args' env
+      Nothing -> call name args' env code
   eval (Apply expr args) env = do
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args

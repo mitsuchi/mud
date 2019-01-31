@@ -81,7 +81,7 @@ main = do
       "3" ~=? pe "type Complex = { r:Int, i:Int }; fun + : Int -> Complex -> Complex = y x -> Complex (x.r+y) (x.i); a = Complex 1 2; (2 + a).r",
       "2" ~=? pe "type Complex = { r:Int, i:Int }; fun - : Complex -> Complex = x y -> Complex (x.r-y.r) (x.i-y.i); a = Complex 1 2; b = Complex 3 4; (b - a).r",
       "3" ~=? pe "fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c); fun inc : Int -> Int = x -> x + 1; fun double : Int -> Int = x -> x * 2; (inc * double) 1",
-      "function '** : Int -> Int -> ?' not found" ~=? pe "1**2"
+      "1:function '** : Int -> Int -> ?' not found" ~=? pe "1**2"
     ]
 
 pe :: String -> String

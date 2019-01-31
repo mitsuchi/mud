@@ -23,7 +23,7 @@ module Expr where
     | StrLit String
     | DoubleLit Double
     | Var Name Code
-    | BinOp Op Expr Expr
+    | BinOp Op Code Expr Expr
     | Seq [Expr]
     | Assign Name Expr
     | FunDef Name (DeepList Type) [Param] Expr
@@ -65,7 +65,7 @@ module Expr where
     show (DoubleLit f) = show f
     show (Neg e) = "-" ++ show e
     show (Var name _) = name
-    show (BinOp op e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
+    show (BinOp op _ e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
     show (Fun types params body env) = "function : " ++ (show types)
     show (FunDef name types params body) = "(Fun (" ++ name ++ ") " ++ (show body) ++ ")"

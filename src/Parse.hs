@@ -62,21 +62,21 @@ module Parse where
   ops =
     [ 
       [ Prefix (Neg <$ symbol "-") ]
-    , [ InfixR (BinOp (OpLit "++") <$ symbol "++")
-      , InfixR (BinOp (OpLit "**") <$ symbol "**") ]
-    , [ InfixL (BinOp Dot <$ (symbol "." *> notFollowedBy integer)) ]
-    , [ InfixL (BinOp (OpLit "*") <$ symbol "*")
-      , InfixL (BinOp (OpLit "/") <$ symbol "/") ]
-    , [ InfixL (BinOp (OpLit "+") <$ symbol "+")
-      , InfixL (BinOp (OpLit "-") <$ symbol "-") ]
-    , [ InfixL (BinOp (OpLit "<=") <$ symbol "<=")
-      , InfixL (BinOp (OpLit "=>") <$ symbol "=>")
-      , InfixL (BinOp (OpLit "<") <$ symbol "<")
-      , InfixL (BinOp (OpLit ">") <$ symbol ">") ]
-    , [ InfixR (BinOp (OpLit "==") <$ symbol "==") ]
-    , [ InfixL (BinOp (OpLit "&&") <$ symbol "&&") ]
-    , [ InfixL (BinOp (OpLit "||") <$ symbol "||") ]
-    , [ InfixR (BinOp Eq <$ symbol "=") ]
+    , [ InfixR (BinOp (OpLit "++") <$> (symbol "++" *> getCode))
+      , InfixR (BinOp (OpLit "**") <$> (symbol "**" *> getCode)) ]
+    , [ InfixL (BinOp Dot <$> (symbol "." *> getCode <* notFollowedBy integer)) ]
+    , [ InfixL (BinOp (OpLit "*") <$> (symbol "*" *> getCode))
+      , InfixL (BinOp (OpLit "/") <$> (symbol "/" *> getCode)) ]
+    , [ InfixL (BinOp (OpLit "+") <$> (symbol "+" *> getCode))
+      , InfixL (BinOp (OpLit "-") <$> (symbol "-" *> getCode)) ]
+    , [ InfixL (BinOp (OpLit "<=") <$> (symbol "<=" *> getCode))
+      , InfixL (BinOp (OpLit "=>") <$> (symbol "=>" *> getCode))
+      , InfixL (BinOp (OpLit "<") <$> (symbol "<" *> getCode))
+      , InfixL (BinOp (OpLit ">") <$> (symbol ">" *> getCode)) ]
+    , [ InfixR (BinOp (OpLit "==") <$> (symbol "==" *> getCode)) ]
+    , [ InfixL (BinOp (OpLit "&&") <$> (symbol "&&" *> getCode)) ]
+    , [ InfixL (BinOp (OpLit "||") <$> (symbol "||" *> getCode)) ]
+    , [ InfixR (BinOp Eq <$> (symbol "=" *> getCode)) ]
     ]
   
   expr :: Parser Expr
