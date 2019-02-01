@@ -7,13 +7,13 @@ module Env where
 
   type GeneralEnv a = IORef (Map String [(DeepList String, a)])
 
-  lookupVar :: String -> GeneralEnv a -> IO (Maybe a)
+  lookupVar :: (Show a) => String -> GeneralEnv a -> IO (Maybe a)
   lookupVar name env = lookupVar' name env False
 
-  lookupVarLoose :: String -> GeneralEnv a -> IO (Maybe a)
+  lookupVarLoose :: (Show a) => String -> GeneralEnv a -> IO (Maybe a)
   lookupVarLoose name env = lookupVar' name env True
 
-  lookupVar' :: String -> GeneralEnv a -> Bool -> IO (Maybe a)
+  lookupVar' :: (Show a) => String -> GeneralEnv a -> Bool -> IO (Maybe a)
   lookupVar' name env loose = do
     env' <- readIORef env
     return $ do
@@ -22,15 +22,18 @@ module Env where
         (Elem "_", expr):[] -> Just expr
         -- 変数として名前がなくても関数として1つだけ名前があるならそれを参照する
         (Plain _, expr):[] -> if loose then Just expr else Nothing
-
+        -- そうでなければなし
+        otherwise          -> Nothing
+        
   -- 関数を環境に登録する
   -- 同名の変数も、同型の関数もない場合のみ登録できる
   -- ただし、同名の関数がある場合はその定義の末尾に追加する
-  insertFun :: String -> DeepList String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))      
+  insertFun :: (Show a) => String -> DeepList String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))      
   insertFun name types expr env = do
-    ve <- varExists name env
+    -- ve <- varExists name env
     fe <- funExists name types env
-    if not ve && not fe
+    --if not ve && not fe
+    if not fe
     then do
       insertFun' name (generalizeTypeSig types) expr env
       return $ Right env
@@ -85,7 +88,7 @@ module Env where
     writeIORef env (Map.insert name [(Elem "_", expr)] env')
     return $ Right env
 
-  varExists :: String -> GeneralEnv a -> IO Bool
+  varExists :: (Show a) => String -> GeneralEnv a -> IO Bool
   varExists name env = do
     exists <- lookupVar name env
     case exists of

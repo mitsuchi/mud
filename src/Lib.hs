@@ -41,6 +41,7 @@ module Lib where
   runEval :: Expr -> IO ()
   runEval expr = do
     env <- newIORef Map.empty
+    insertPrimitives env
     expr' <- runExceptT (eval expr env)
     case expr' of 
       Right val -> putStrLn (show val)
@@ -49,6 +50,7 @@ module Lib where
   runEvalOnly :: Expr -> IO ()
   runEvalOnly expr = do
     env <- newIORef Map.empty
+    insertPrimitives env
     expr' <- runExceptT (eval expr env)
     case expr' of 
       Right val -> putStr ""

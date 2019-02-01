@@ -39,6 +39,7 @@ module Expr where
     | TypeDef Name [(String, DeepList Type)]
     | StructType [(String, DeepList Type)]
     | StructValue (Map Name Expr)
+    | Call Name
 
   data Op
     = Mul
@@ -80,6 +81,7 @@ module Expr where
     show (StructType types) = "(StructType " ++ show types ++ ")"
     show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ Map.lookup "type" sv)) sv
       where f k a result = if k == "type" then result else result ++ " " ++ k ++ ":" ++ (show a)
+    show (Call name) = "(Call " ++ name ++ ")"
   
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2

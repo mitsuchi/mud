@@ -59,6 +59,7 @@ module Eval where
     eval (Assign name (Fun types params body env)) env  
   eval (FunDefAnon types params body) env = do
     return $ Fun types params body env
+  eval (Apply (Call name) args) env = call name args env emptyCode
   eval (Apply (Fun types params body outerEnv) args) env = do
     varMap <- liftIO $ readIORef outerEnv
     env' <- liftIO $ newEnv params args varMap
@@ -93,6 +94,7 @@ module Eval where
     case cond' of
       BoolLit True -> eval thenExpr env
       BoolLit False -> eval elseExpr env
+      otherwise -> error ("cond = " ++ show (cond'))
   eval (TypeDef name typeDef) env = do
     forM_ typeDef $ \(member, (Plain [typeList])) -> do
       eval (FunDef member (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct" emptyCode) [Var "x" emptyCode, StrLit member])) env

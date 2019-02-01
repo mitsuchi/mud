@@ -74,3 +74,51 @@ module Primitive where
     case var of 
       Just expr -> makeStruct es (Map.insert name expr m) env
       Nothing -> error "can't find struct member"
+
+
+  insertPrimitives :: Env -> IO Env
+  insertPrimitives env = do
+    insertFun' "+" (Plain [Elem "Int", Elem "Int", Elem "Int"]) (Call "+") env
+    insertFun' "+" (Plain [Elem "String", Elem "String", Elem "String"]) (Call "+") env
+    insertFun' "+" (Plain [Elem "Double", Elem "Double"]) (Call "+") env
+    insertFun' "+" (Plain [Elem "String", Elem "String"]) (Call "+") env
+    insertFun' "+" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]]) (Call "+") env
+    insertFun' "+" (Plain [Elem "Bool", Elem "Bool"]) (Call "+") env
+    insertFun' "+" (Plain [Elem "Int", Elem "Double"]) (Call "+") env
+    insertFun' "+" (Plain [Elem "Double", Elem "Int"]) (Call "+") env
+    insertFun' "-" (Plain [Elem "Int", Elem "Int"]) (Call "-") env
+    insertFun' "-" (Plain [Elem "Double", Elem "Double"]) (Call "-") env
+    insertFun' "-" (Plain [Elem "Int", Elem "Double"]) (Call "-") env
+    insertFun' "-" (Plain [Elem "Double", Elem "Int"]) (Call "-") env
+    insertFun' "*" (Plain [Elem "Int", Elem "Int"]) (Call "*") env
+    insertFun' "*" (Plain [Elem "Double", Elem "Double"]) (Call "*") env
+    insertFun' "*" (Plain [Elem "String", Elem "Int"]) (Call "*") env
+    insertFun' "*" (Plain [Elem "Bool", Elem "Bool"]) (Call "*") env
+    insertFun' "*" (Plain [Elem "Int", Elem "Double"]) (Call "*") env
+    insertFun' "*" (Plain [Elem "Double", Elem "Int"]) (Call "*") env
+    insertFun' "/" (Plain [Elem "Int", Elem "Int"]) (Call "/") env
+    insertFun' "/" (Plain [Elem "Double", Elem "Double"]) (Call "/") env
+    insertFun' "/" (Plain [Elem "Int", Elem "Double"]) (Call "/") env
+    insertFun' "/" (Plain [Elem "Double", Elem "Int"]) (Call "/") env
+    insertFun' "==" (Plain [Elem "Int", Elem "Int"]) (Call "==") env
+    insertFun' "==" (Plain [Elem "String", Elem "String"]) (Call "==") env
+    insertFun' "==" (Plain [Elem "Bool", Elem "Bool"]) (Call "==") env
+    insertFun' "==" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]] ) (Call "==") env
+    insertFun' "<" (Plain [Elem "Int", Elem "Int"]) (Call "<") env
+    insertFun' "<" (Plain [Elem "Double", Elem "Double"]) (Call "<") env
+    insertFun' "<" (Plain [Elem "Int", Elem "Double"]) (Call "<") env
+    insertFun' "<" (Plain [Elem "Double", Elem "Int"]) (Call "<") env
+    insertFun' "<=" (Plain [Elem "Int", Elem "Int"]) (Call "<=") env
+    insertFun' "<=" (Plain [Elem "Double", Elem "Double"]) (Call "<=") env
+    insertFun' "<=" (Plain [Elem "Int", Elem "Double"]) (Call "<=") env
+    insertFun' "<=" (Plain [Elem "Double", Elem "Int"]) (Call "<=") env
+    insertFun' ">" (Plain [Elem "Int", Elem "Int"]) (Call ">") env
+    insertFun' ">" (Plain [Elem "Double", Elem "Double"]) (Call ">") env
+    insertFun' ">" (Plain [Elem "Int", Elem "Double"]) (Call ">") env
+    insertFun' ">" (Plain [Elem "Double", Elem "Int"]) (Call ">") env
+    insertFun' ">=" (Plain [Elem "Int", Elem "Int"]) (Call ">=") env
+    insertFun' ">=" (Plain [Elem "Double", Elem "Double"]) (Call ">=") env
+    insertFun' ">=" (Plain [Elem "Int", Elem "Double"]) (Call ">=") env
+    insertFun' ">=" (Plain [Elem "Double", Elem "Int"]) (Call ">=") env
+    insertFun' "&&" (Plain [Elem "Bool", Elem "Bool"]) (Call "&&") env
+    insertFun' "||" (Plain [Elem "Bool", Elem "Bool"]) (Call "||") env
