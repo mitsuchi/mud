@@ -10,6 +10,7 @@ module TypeUtil where
   findTypeEnv (Elem a) (Elem b) env | isLower (b!!0) =
     Just env
   findTypeEnv (Elem a) (Plain bs) env | isUpper (a!!0) = Nothing
+  findTypeEnv (Elem "_") (Plain bs) env = Nothing
   findTypeEnv (Elem a) b env | isLower (a!!0) = 
     let mapped = Map.lookup a env in
     if mapped == Nothing then Just (Map.insert a b env)

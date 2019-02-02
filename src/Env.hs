@@ -2,6 +2,7 @@ module Env where
 
   import Data.IORef
   import Data.Map as Map
+  import Debug.Trace
   import DeepList
   import TypeUtil
 
@@ -19,7 +20,8 @@ module Env where
     return $ do
       vars <- Map.lookup name env'
       case vars of
-        (Elem "_", expr):[] -> Just expr
+        -- 同じ名前の定義の先頭に変数があればそれを参照する
+        (Elem "_", expr):es -> Just expr
         -- 変数として名前がなくても関数として1つだけ名前があるならそれを参照する
         (Plain _, expr):[] -> if loose then Just expr else Nothing
         -- そうでなければなし
@@ -49,23 +51,19 @@ module Env where
     writeIORef env (Map.insert name (funs' ++ [(generalizeTypeSig types, expr)]) env')
     return env
 
-  funExists :: String -> DeepList String -> GeneralEnv a -> IO Bool
+  funExists :: (Show a) => String -> DeepList String -> GeneralEnv a -> IO Bool
   funExists name types env = do
     fun <- lookupFun name types env
     case fun of
       Nothing -> return $ False
       Just expr -> return $ True
 
-  lookupFun :: String -> DeepList String -> GeneralEnv a -> IO (Maybe a)
+  lookupFun :: (Show a) => String -> DeepList String -> GeneralEnv a -> IO (Maybe a)
   lookupFun name types env = do
     env' <- readIORef env
     return $ do
       funs <- Map.lookup name env'
-      case funs of
-        (Elem "_", expr):[] -> Nothing
-        otherwise -> do
-          fun <- firstMatch (generalizeTypeSig types) funs
-          return fun
+      firstMatch (generalizeTypeSig types) funs
 
   firstMatch :: DeepList String -> [(DeepList String, a)] -> Maybe a
   firstMatch types [] = Nothing
@@ -86,7 +84,10 @@ module Env where
   insertVarForce :: String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
   insertVarForce name expr env = do
     env' <- readIORef env
-    writeIORef env (Map.insert name [(Elem "_", expr)] env')
+    funs' <- case Map.lookup name env' of
+      Nothing -> return []
+      Just funs -> return funs
+    writeIORef env (Map.insert name ([(Elem "_", expr)] ++ funs') env')
     return $ Right env
 
   varExists :: (Show a) => String -> GeneralEnv a -> IO Bool
