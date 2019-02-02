@@ -74,13 +74,14 @@ module Env where
     Just env -> Just expr    
 
   -- 変数を環境に登録する
-  -- 同名の変数も関数もない場合のみ登録できる
-  insertVar :: String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
+  -- 同名の変数がない場合のみ登録できる
+  -- 同名の関数はあってもいい
+  insertVar :: (Show a) => String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
   insertVar name expr env = do
-    e <- anyExists name env
+    e <- varExists name env
     if not e
-    then insertVarForce name expr env
-    else return $ Left ("variable '" ++ name ++ "' already exists")
+      then insertVarForce name expr env
+      else return $ Left ("variable '" ++ name ++ "' already exists")
 
   insertVarForce :: String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
   insertVarForce name expr env = do
