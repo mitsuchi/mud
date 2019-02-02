@@ -115,6 +115,7 @@ module Expr where
   matchCond ((ListLit l1):e1s) ((ListLit [Var h _, Var t _]):e2s) = matchCond e1s e2s
   matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) = l1 == l2 && matchCond e1s e2s
   matchCond ((ListLit l):e1s) ((Var v _):e2s) = matchCond e1s e2s
+  matchCond ((StructValue s):e1s) ((Var v _):e2s) = matchCond e1s e2s
   matchCond ((Fun _ _ _ _):e1s) ((Var v _):e2s) = matchCond e1s e2s
   matchCond [] [] = True
   matchCond e1 e2 = trace ("matchCond: " ++ show (e1,e2)) $ False
