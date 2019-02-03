@@ -58,7 +58,7 @@ module Lib where
 
   repl :: IO ()
   repl = do
-    (newIORef Map.empty) >>= until_ (== "quit") (readPrompt "> ") . evalAndPrint
+    (newIORef Map.empty) >>= insertPrimitives >>= until_ (== "quit") (readPrompt "> ") . evalAndPrint
 
   evalAndPrint :: Env -> String -> IO ()
   evalAndPrint env expr =  evalString env expr >>= putStrLn
