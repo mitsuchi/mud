@@ -21,6 +21,10 @@ module Primitive where
     case Map.lookup member structValue of
       Just expr -> return expr
       Nothing -> throwError ("can't find struct member '" ++ member ++ "'")
+  call "to_s" [IntLit i] env _ = return $ StrLit (show i)
+  call "to_s" [DoubleLit d] env _ = return $ StrLit (show d)
+  call "to_s" [ListLit l] env _ = return $ StrLit (show l)
+  call "to_s" [BoolLit b] env _ = return $ StrLit (show b)
   call "+" [IntLit i1, IntLit i2] env _ = return $ IntLit (i1+i2)
   call "+" [DoubleLit f1, DoubleLit f2] env _ = return $ DoubleLit (f1+f2)
   call "+" [StrLit i1, StrLit i2] env _ = return $ StrLit (i1++i2)
@@ -78,6 +82,10 @@ module Primitive where
 
   insertPrimitives :: Env -> IO Env
   insertPrimitives env = do
+    insertFun' "to_s" (Plain [Elem "Int", Elem "String"]) (Call "to_s") env
+    insertFun' "to_s" (Plain [Elem "Double", Elem "String"]) (Call "to_s") env
+    insertFun' "to_s" (Plain [Plain [Elem "List", Elem "a"], Elem "String"]) (Call "to_s") env
+    insertFun' "to_s" (Plain [Elem "Bool", Elem "String"]) (Call "to_s") env
     insertFun' "+" (Plain [Elem "Int", Elem "Int", Elem "Int"]) (Call "+") env
     insertFun' "+" (Plain [Elem "String", Elem "String", Elem "String"]) (Call "+") env
     insertFun' "+" (Plain [Elem "Double", Elem "Double"]) (Call "+") env
