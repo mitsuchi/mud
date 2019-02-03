@@ -34,9 +34,13 @@ fun * : Rat -> Rat -> Rat = x y -> {
   mkRat (x.n*y.n) (x.d*y.d)
 }
 
+fun to_s : Rat -> String = {
+  x -> x.n.to_s + "/" + x.d.to_s
+}
+
 x = Rat 1 2
 y = Rat 2 3
 
-puts (x + y)
-puts (x * y)
-puts (x - y)
+(x + y).to_s.puts
+(x * y).to_s.puts
+(x - y).to_s.puts
