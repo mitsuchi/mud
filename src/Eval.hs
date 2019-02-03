@@ -66,7 +66,7 @@ module Eval where
     eval body env'
   eval (Apply (Var name code) args) env = do
     args' <- mapM (\arg -> eval arg env) args
-    fun' <- liftIO $ lookupFun name (Plain (map typeOf' args')) env
+    fun' <- liftIO $ lookupFun name (Plain (map typeOf' args')) env False
     case fun' of
       Just fun -> eval (Apply fun args') env
       Nothing -> call name args' env code
@@ -81,7 +81,7 @@ module Eval where
                    in eval (Apply (Fun types params (snd pair) env) args) env
       Nothing   -> throwError "condition no match"
   eval expr@(TypeSig sig (Var name _)) env = do
-    fun' <- liftIO $ lookupFun name sig env
+    fun' <- liftIO $ lookupFun name sig env False
     case fun' of
       Just fun -> return fun
       Nothing -> do

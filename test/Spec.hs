@@ -85,7 +85,9 @@ main = do
       "10" ~=? pe "10.to_s",
       "12.3" ~=? pe "(12.3).to_s",
       "False" ~=? pe "False.to_s",
-      "[1,2,3]" ~=? pe "[1,2,3].to_s"
+      "[1,2,3]" ~=? pe "[1,2,3].to_s",
+      "1" ~=? pe "fun hoge : Int -> Int = x -> 1; fun hoge : a -> a = x -> x; hoge 2",
+      "2.0" ~=? pe "fun hoge : Int -> Int = x -> 1; fun hoge : a -> a = x -> x; hoge 2.0"
     ]
 
 pe :: String -> String

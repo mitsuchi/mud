@@ -28,47 +28,47 @@ module Env where
         otherwise          -> Nothing
         
   -- 関数を環境に登録する
-  -- 同名の変数も、同型の関数もない場合のみ登録できる
-  -- ただし、同名の関数がある場合はその定義の末尾に追加する
+  -- 同名かつ同型の関数がない場合のみ登録できる
   insertFun :: (Show a) => String -> DeepList String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))      
   insertFun name types expr env = do
-    -- ve <- varExists name env
     fe <- funExists name types env
-    --if not ve && not fe
     if not fe
     then do
-      insertFun' name (generalizeTypeSig types) expr env
+      insertFun' name types expr env
       return $ Right env
     else
       return $ Left ("function '" ++ name ++ "' already exists"  )
 
+  -- 同名の関数がある場合は、具体型の関数は先頭に、多相型の関数は末尾に追加する      
   insertFun' :: String -> DeepList String -> a -> GeneralEnv a -> IO (GeneralEnv a)
   insertFun' name types expr env = do
     env' <- readIORef env
     funs' <- case Map.lookup name env' of
       Nothing -> return []
       Just funs -> return funs
-    writeIORef env (Map.insert name (funs' ++ [(generalizeTypeSig types, expr)]) env')
+    generalizedTypes <- return $ generalizeTypeSig types
+    writeIORef env (Map.insert name (if types == generalizedTypes then [(generalizedTypes, expr)] ++ funs' else funs' ++ [(generalizedTypes, expr)]) env')
     return env
 
   funExists :: (Show a) => String -> DeepList String -> GeneralEnv a -> IO Bool
   funExists name types env = do
-    fun <- lookupFun name types env
+    fun <- lookupFun name types env True
     case fun of
       Nothing -> return $ False
       Just expr -> return $ True
 
-  lookupFun :: (Show a) => String -> DeepList String -> GeneralEnv a -> IO (Maybe a)
-  lookupFun name types env = do
+  
+  lookupFun :: (Show a) => String -> DeepList String -> GeneralEnv a -> Bool -> IO (Maybe a)
+  lookupFun name types env strict = do
     env' <- readIORef env
     return $ do
       funs <- Map.lookup name env'
-      firstMatch (generalizeTypeSig types) funs
+      firstMatch (generalizeTypeSig types) funs strict
 
-  firstMatch :: DeepList String -> [(DeepList String, a)] -> Maybe a
-  firstMatch types [] = Nothing
-  firstMatch types ((types', expr):es) = case findTypeEnv types' types Map.empty of
-    Nothing -> firstMatch types es
+  firstMatch :: DeepList String -> [(DeepList String, a)] -> Bool -> Maybe a
+  firstMatch types [] strict = Nothing
+  firstMatch types ((types', expr):es) strict = case findTypeEnv types' types Map.empty strict of
+    Nothing -> firstMatch types es strict
     Just env -> Just expr    
 
   -- 変数を環境に登録する
