@@ -5,11 +5,11 @@ fun gcd : Int -> Int -> Int = {
   a 1 -> 1
   a a -> a
   a b -> {
-    a0 = abs(a)
-    b0 = abs(b)
-    if a0 < b0
-      then gcd a0 (b0-a0)
-      else gcd (a0-b0) b0
+    a' = abs(a)
+    b' = abs(b)
+    if a' < b'
+      then gcd a' (b'-a')
+      else gcd (a'-b') b'
   }
 }
 

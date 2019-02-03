@@ -1,18 +1,18 @@
 fun sqrt : a -> a = x -> {
-  sqrtIter 1.0 x
+  sqrt_iter 1.0 x
 }
 
-fun sqrtIter : a -> a -> a = {
-  guess x -> if goodEnough guess x
+fun sqrt_iter : a -> a -> a = {
+  guess x -> if good_enough? guess x
     then guess
-    else sqrtIter (improve guess x) x
+    else sqrt_iter (improve guess x) x
 }
 
 fun improve : a -> a -> a = {
   guess x -> average guess (x/guess)
 }
 
-fun goodEnough : a -> a -> Bool = {
+fun good_enough? : a -> a -> Bool = {
   guess x -> abs (guess*guess - x) < 0.0001
 }
 
