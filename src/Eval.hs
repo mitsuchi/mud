@@ -76,7 +76,7 @@ module Eval where
     eval (Apply expr' args') env
   eval (Case es matchPairs types) env = do
     es' <- mapM (\e -> eval e env ) es
-    case find (\pair -> matchCond es' (fst pair)) matchPairs of
+    case find (\pair -> matchCond es' (fst pair) Map.empty) matchPairs of
       Just pair -> let (params, args) = paramsAndArgs (fst pair) es'
                    in eval (Apply (Fun types params (snd pair) env) args) env
       Nothing   -> throwError "condition no match"
