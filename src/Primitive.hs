@@ -25,6 +25,12 @@ module Primitive where
   call "to_s" [DoubleLit d] env _ = return $ StrLit (show d)
   call "to_s" [ListLit l] env _ = return $ StrLit (show l)
   call "to_s" [BoolLit b] env _ = return $ StrLit (show b)
+  call "debug" [StrLit s] env _ = do
+    env' <- liftIO $ readIORef env
+    case Map.lookup s env' of
+      Just es -> lift $ putStrLn (show es)
+      Nothing -> lift $ putStrLn ("'"  ++ s ++ "' not found")
+    return (StrLit s)
   call "+" [IntLit i1, IntLit i2] env _ = return $ IntLit (i1+i2)
   call "+" [DoubleLit f1, DoubleLit f2] env _ = return $ DoubleLit (f1+f2)
   call "+" [StrLit i1, StrLit i2] env _ = return $ StrLit (i1++i2)
@@ -82,6 +88,7 @@ module Primitive where
 
   insertPrimitives :: Env -> IO Env
   insertPrimitives env = do
+    insertFun' "debug" (Plain [Elem "String", Elem "String"]) (Call "debug") env    
     insertFun' "to_s" (Plain [Elem "Int", Elem "String"]) (Call "to_s") env
     insertFun' "to_s" (Plain [Elem "Double", Elem "String"]) (Call "to_s") env
     insertFun' "to_s" (Plain [Plain [Elem "List", Elem "a"], Elem "String"]) (Call "to_s") env
