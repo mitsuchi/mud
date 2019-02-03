@@ -45,13 +45,20 @@ module Parse where
   reservedWords = ["fun","if","then","else","type"]
   
   identifier :: Parser String
-  identifier = (lexeme . try) (p >>= check)
+  identifier = (lexeme . try) (identifier' >>= check)
     where
-      p       = (:) <$> letterChar <*> many alphaNumChar
       check x = if x `elem` reservedWords
                   then fail $ "keyword " ++ show x ++ " cannot be an identifier"
                   else return x
   
+  identifier' :: Parser String                  
+  identifier' = do
+    firstLetter <- letterChar
+    middleLetters <- many ( oneOf (['0'..'9'] ++ ['a'..'z'] ++ ['A'..'Z'] ++ ['_']) )
+    lastLetters <- many (oneOf "!?_'")
+    return $ firstLetter : (middleLetters ++ lastLetters)
+
+
   symbol :: String -> Parser String
   symbol s = (L.symbol scn s)
 
