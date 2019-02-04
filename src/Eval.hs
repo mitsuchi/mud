@@ -37,6 +37,7 @@ module Eval where
     e' <- eval e env
     eval (Assign v e') env  
   eval (BinOp Dot _ e1 (Var v c)) env = eval (Apply (Var v c) [e1]) env
+  eval (BinOp Dot _ e1 fun@(Fun types params expr outerEnv)) env = eval (Apply fun [e1]) env
   eval (BinOp Dot _ e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
   eval (BinOp (OpLit lit) code e1 e2) env = eval (Apply (Var lit code) [e1, e2]) env  
   eval (BinOp op code e1 e2) env = do

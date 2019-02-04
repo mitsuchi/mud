@@ -100,7 +100,9 @@ main = do
       "6" ~=? pe "fun double = x -> x + x; double 3",
       "120" ~=? pe "fun fact = {1->1; n->n*fact(n-1)}; fact 5",
       "20" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 10",
-      "hello hello" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 'hello'"
+      "hello hello" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 'hello'",
+      "3" ~=? pe "(x -> x + 2) 1",
+      "3" ~=? pe "1.(x -> x + 2)"
     ]
 
 pe :: String -> String
