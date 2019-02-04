@@ -183,7 +183,7 @@ fun divide? : Int -> Int -> Bool = {
 [1,2,3].map (x -> x + x)   #=> [2,4,6]
 
 # 通常の関数の型を省略する。
-# 以下の場合 triple : a -> b とみなされる。
+# 同様に triple : a -> b とみなされる。
 fun triple = x -> x * 3
 triple 10 #=> 30
 triple "a" #=> "aaa"
