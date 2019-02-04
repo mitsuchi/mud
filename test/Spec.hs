@@ -94,7 +94,13 @@ main = do
       "aa" ~=? pe "(x->x+x) 'a'",
       "40" ~=? pe "(x->x+x) 20",
       "40" ~=? pe "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x) 10",
-      "3" ~=? pe "fun ** : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f); fun inc : Int -> Int = x -> x + 1; fun double : Int -> Int = x -> x * 2; (inc ** double) 1"
+      "3" ~=? pe "fun ** : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f); fun inc : Int -> Int = x -> x + 1; fun double : Int -> Int = x -> x * 2; (inc ** double) 1",
+      "3" ~=? pe "fun add = x y -> x + y; add 1 2",
+      "hoge" ~=? pe "fun add = x y -> x + y; add 'ho' 'ge'",
+      "6" ~=? pe "fun double = x -> x + x; double 3",
+      "120" ~=? pe "fun fact = {1->1; n->n*fact(n-1)}; fact 5",
+      "20" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 10",
+      "hello hello" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 'hello'"
     ]
 
 pe :: String -> String

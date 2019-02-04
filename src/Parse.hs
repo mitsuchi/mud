@@ -120,7 +120,9 @@ module Parse where
       -- 型を省略した場合はもっとも一般的な型にしちゃう
       Nothing -> return $ makeGeneralType (length params)
     return $ FunDefAnon sig params body
-      where makeGeneralType n = Plain (map (\x -> Elem ("t" ++ show x)) [0..n])
+
+  makeGeneralType :: Int -> DeepList String
+  makeGeneralType n = Plain (map (\x -> Elem ("t" ++ show x)) [0..n])
 
   exprWithTypeSig :: Parser Expr
   exprWithTypeSig = do
@@ -199,25 +201,31 @@ module Parse where
   fundef = do
     rword "fun"
     name <- try identifier <|> operator
-    symbol ":"
-    types <- typeList
+    types' <- optional (symbol ":" *> typeList)
     symbol "="
     params <- some identifier
     symbol "->"
     body <- expr
+    types <- case types' of
+      Just list -> return list
+      -- 型を省略した場合はもっとも一般的な型にしちゃう
+      Nothing -> return $ makeGeneralType (length params)
     return $ FunDef name types params body
   
   funDefCase :: Parser Expr
   funDefCase = do
     rword "fun"
     name <- try identifier <|> try operator
-    symbol ":"
-    types <- typeList
+    types' <- optional (symbol ":" *> typeList)
     symbol "="
     symbol "{"
     many newLine
     matches <- some matchExpr
     symbol "}"
+    types <- case types' of
+      Just list -> return list
+      -- 型を省略した場合はもっとも一般的な型にしちゃう
+      Nothing -> return $ makeGeneralType (paramNum matches) 
     return $ FunDef name types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types) 
       where 
         paramNum matches = length (fst3 (head matches))
