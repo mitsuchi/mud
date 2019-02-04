@@ -97,10 +97,10 @@ fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c)
 10.inc.double.double       #=> 44
 
 fun select : [a] -> (a -> Bool) -> [a] = {
-  []    f -> []
-  [h,t] f -> if (h.f)
-    then ([h] + select t f)
-    else (select t f)
+  []     f -> []
+  [e,es] f -> if (e.f)
+    then ([e] + select es f)
+    else (select es f)
 }
 
 fun qsort : [a] -> [a] = {
@@ -149,6 +149,17 @@ fun abs : Int -> Int = {
 }
 abs (-3)  #=> 3
 abs 3     #=> 3
+
+# 条件つきパターンマッチを使った fizzbuzz の例
+fun fizzbuzz : Int -> String = {
+  a |15.div? a| -> "fizzbuzz"
+  a | 5.div? a| -> "buzz"
+  a | 3.div? a| -> "fizz"
+  a             -> a.to_s
+}
+fun div? : Int -> Int -> Bool = {
+  a b -> (b/a)*a == b
+}
 
 # 匿名関数の型を省略する。
 # 以下の場合 (x -> x + x : a -> b) のように最も一般的な型とみなされる。
