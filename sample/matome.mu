@@ -117,6 +117,45 @@ fun id : a -> a = x -> x
 id 1     #=> 1
 id 'one' #=> "one"
 
-## 関数に引数を適用するだけの関数 apply
+# 関数に引数を適用するだけの関数 apply
 fun apply : (a->a) -> a -> a = f x -> f x
 apply inc 0 #=> 1
+
+# 関数名の末尾に ? を使える
+fun even? : Int -> Bool = x -> x/2*2 == x
+even? 8 #=> True
+even? 9 #=> False
+
+# 関数名、変数名の途中と末尾に _ を使える
+fun to_s : Complex -> String = {
+  c -> c.r.to_s + "+" + c.i.to_s + "i"
+}
+(Complex 1 2).to_s #=> "1+2i"
+
+# 関数名、変数名の末尾に ' を使える
+a' = a + 2 #=> 3
+
+# 多相型を含む同名の関数が複数ある場合、より具体的なほうがマッチする
+fun add' : String -> String -> String = x y -> x + " " + y
+fun add' : a -> a -> a = x y -> x + y
+
+add' "hello" "world" #=> "hello world"
+add' 1 2 #=> 3
+
+# パターンマッチに条件をつける
+fun abs : Int -> Int = {
+  a |a<0| -> -a
+  a       -> a
+}
+abs (-3)  #=> 3
+abs 3     #=> 3
+
+# 匿名関数の型を省略する。
+# 以下の場合 (x -> x + x : a -> b) のように最も一般的な型とみなされる。
+[1,2,3].map (x -> x + x)   #=> [2,4,6]
+
+# 通常の関数の型を省略する。
+# 以下の場合 triple : a -> b とみなされる。
+fun triple = x -> x * 3
+triple 10 #=> 30
+triple "a" #=> "aaa"
