@@ -21,6 +21,6 @@ fun range : Int -> Int -> [Int] = {
 }
 
 (range 1 15).each {
-  x -> puts (fizzbuzz x) : Int -> String
+  x -> puts (fizzbuzz x)
 }
 
