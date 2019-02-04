@@ -30,7 +30,7 @@ module Expr where
     | FunDefAnon (DeepList Type) [Param] Expr
     | Fun (DeepList Type) [Param] Expr Env
     | Apply Expr [Expr]
-    | Case [Expr] [([Expr],Expr)] (DeepList Type)
+    | Case [Expr] [([Expr],Expr,Maybe Expr)] (DeepList Type)
     | TypeSig (DeepList Type) Expr
     | ListLit [Expr]
     | BoolLit Bool
@@ -106,19 +106,6 @@ module Expr where
   typeOf' (StructValue s) = case Map.lookup "type" s of
     Just (StrLit str) -> Elem str
     Nothing           -> error "type not defined in struct value"
-
-  matchCond :: [Expr] -> [Expr] -> (Map String Expr) -> Bool
-  matchCond (IntLit i:e1s) (IntLit j:e2s) env = i == j && matchCond e1s e2s env
-  matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) env = i == j && matchCond e1s e2s env
-  matchCond ((ListLit l1):e1s) ((ListLit [Var h _, Var t _]):e2s) env = matchCond e1s e2s env
-  matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) env = l1 == l2 && matchCond e1s e2s env
-  matchCond (e0:e1s) ((Var v _):e2s) env = case Map.lookup v env of
-    Nothing -> matchCond e1s e2s (Map.insert v e0 env)
-    Just e  -> if e == e0
-      then matchCond e1s e2s env
-      else False
-  matchCond [] [] env = True
-  matchCond e1 e2 env = trace ("matchCond: " ++ show (e1,e2)) $ False
 
   paramsAndArgs :: [Expr] -> [Expr] -> ([String], [Expr])
   paramsAndArgs [] [] = ([],[])

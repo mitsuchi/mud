@@ -10,7 +10,8 @@ module Parse where
 
   import DeepList
   import Expr
-  
+  import Tuple
+
   type Parser = Parsec Void String
 
   sc :: Parser ()
@@ -215,7 +216,7 @@ module Parse where
     symbol "}"
     return $ FunDef name types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types) 
       where 
-        paramNum matches = length (fst (head matches))
+        paramNum matches = length (fst3 (head matches))
         paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
         varList n = map (\v -> Var v (Code { lineOfCode = 1 })) (paramList n)
 
@@ -229,13 +230,14 @@ module Parse where
     elseExpr <- expr
     return $ If condExpr thenExpr elseExpr
   
-  matchExpr :: Parser ([Expr], Expr)
+  matchExpr :: Parser ([Expr], Expr, Maybe Expr)
   matchExpr = do
     conds <- some arg
+    guard <- optional ( symbol "|" *> expr <* symbol "|")
     symbol "->"
     body <- expr
     many newLine
-    return (conds, body)
+    return (conds, body, guard)
   
   apply :: Parser Expr
   apply = do

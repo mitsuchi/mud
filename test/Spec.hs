@@ -87,7 +87,8 @@ main = do
       "False" ~=? pe "False.to_s",
       "[1,2,3]" ~=? pe "[1,2,3].to_s",
       "1" ~=? pe "fun hoge : Int -> Int = x -> 1; fun hoge : a -> a = x -> x; hoge 2",
-      "2.0" ~=? pe "fun hoge : Int -> Int = x -> 1; fun hoge : a -> a = x -> x; hoge 2.0"
+      "2.0" ~=? pe "fun hoge : Int -> Int = x -> 1; fun hoge : a -> a = x -> x; hoge 2.0",
+      "True" ~=? pe "fun abs : Int -> Int = { a |a<0| -> -a; a -> a }; puts (abs (-3) == abs 3)"
     ]
 
 pe :: String -> String

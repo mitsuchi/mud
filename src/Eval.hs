@@ -5,11 +5,13 @@ module Eval where
   import Data.IORef
   import Data.List (find)
   import Data.Map as Map hiding (map, foldr, take)
+  import Debug.Trace
 
   import Expr
   import Env
   import DeepList
   import Primitive
+  import Tuple
   import TypeUtil
 
   type IOThrowsError = ExceptT String IO
@@ -76,9 +78,10 @@ module Eval where
     eval (Apply expr' args') env
   eval (Case es matchPairs types) env = do
     es' <- mapM (\e -> eval e env ) es
-    case find (\pair -> matchCond es' (fst pair) Map.empty) matchPairs of
-      Just pair -> let (params, args) = paramsAndArgs (fst pair) es'
-                   in eval (Apply (Fun types params (snd pair) env) args) env
+    pair' <- lift $ findM (\pair -> matchCond es' (fst3 pair) (thd3 pair) Map.empty env) matchPairs
+    case pair' of 
+      Just pair -> let (params, args) = paramsAndArgs (fst3 pair) es'
+                   in eval (Apply (Fun types params (snd3 pair) env) args) env
       Nothing   -> throwError "condition no match"
   eval expr@(TypeSig sig (Var name _)) env = do
     fun' <- liftIO $ lookupFun name sig env False
@@ -113,3 +116,32 @@ module Eval where
   insertAny (name, expr) env = case expr of
     (Fun types _ _ _) -> insertFun name types expr env
     otherwise         -> insertVarForce name expr env
+
+  matchCond :: [Expr] -> [Expr] -> Maybe Expr -> (Map String Expr) -> Env -> IO Bool
+  matchCond (IntLit i:e1s) (IntLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
+  matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
+  matchCond ((ListLit l1):e1s) ((ListLit [Var h _, Var t _]):e2s) guard varMap env = matchCond e1s e2s guard varMap env
+  matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) guard varMap env = if l1 == l2 then matchCond e1s e2s guard varMap env else return False
+  matchCond (e0:e1s) ((Var v _):e2s) guard varMap env = case Map.lookup v varMap of
+    Nothing -> matchCond e1s e2s guard (Map.insert v e0 varMap) env
+    Just e  -> if e == e0
+      then matchCond e1s e2s guard varMap env
+      else return False
+  matchCond [] [] guard varMap env = case guard of
+    Nothing -> return True
+    Just guard' -> do
+      varMap' <- liftIO $ readIORef env
+      env' <- newIORef varMap'
+      mapM_ (\p -> insertAny p env') (toList varMap)
+      bool <- runExceptT (eval guard' env')
+      case bool of
+        Right val -> return $ val == (BoolLit True)
+        Left error -> trace error $ return False
+  matchCond e1 e2 _ varMap env = trace ("matchCond: " ++ show (e1,e2)) $ return False
+
+  findM :: Monad m => (a -> m Bool) -> [a] -> m (Maybe a)
+  findM p [] = return Nothing
+  findM p (x:xs) = ifM (p x) (return $ Just x) (findM p xs)
+
+  ifM :: Monad m => m Bool -> m a -> m a -> m a
+  ifM b t f = do b <- b; if b then t else f
