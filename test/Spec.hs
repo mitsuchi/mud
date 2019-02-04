@@ -88,7 +88,13 @@ main = do
       "[1,2,3]" ~=? pe "[1,2,3].to_s",
       "1" ~=? pe "fun hoge : Int -> Int = x -> 1; fun hoge : a -> a = x -> x; hoge 2",
       "2.0" ~=? pe "fun hoge : Int -> Int = x -> 1; fun hoge : a -> a = x -> x; hoge 2.0",
-      "True" ~=? pe "fun abs : Int -> Int = { a |a<0| -> -a; a -> a }; puts (abs (-3) == abs 3)"
+      "True" ~=? pe "fun abs : Int -> Int = { a |a<0| -> -a; a -> a }; puts (abs (-3) == abs 3)",
+      "3" ~=? pe "(x -> x + 1) 2",
+      "20" ~=? pe "(x->x+x) 10",
+      "aa" ~=? pe "(x->x+x) 'a'",
+      "40" ~=? pe "(x->x+x) 20",
+      "40" ~=? pe "fun twice : (a->a)->a = f x -> f (f x); twice (x->x+x) 10",
+      "3" ~=? pe "fun ** : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f); fun inc : Int -> Int = x -> x + 1; fun double : Int -> Int = x -> x * 2; (inc ** double) 1"
     ]
 
 pe :: String -> String

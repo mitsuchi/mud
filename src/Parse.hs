@@ -114,9 +114,13 @@ module Parse where
     params <- some identifier
     symbol "->"
     body <- expr
-    symbol ":"
-    sig <- typeList
+    sig' <- optional (symbol ":" *> typeList)
+    sig <- case sig' of
+      Just list -> return list
+      -- 型を省略した場合はもっとも一般的な型にしちゃう
+      Nothing -> return $ makeGeneralType (length params)
     return $ FunDefAnon sig params body
+      where makeGeneralType n = Plain (map (\x -> Elem ("t" ++ show x)) [0..n])
 
   exprWithTypeSig :: Parser Expr
   exprWithTypeSig = do
