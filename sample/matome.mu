@@ -169,12 +169,12 @@ abs 3     #=> 3
 
 # 条件つきパターンマッチを使った fizzbuzz の例
 fun fizzbuzz : Int -> String = {
-  a |15.div? a| -> "fizzbuzz"
-  a | 5.div? a| -> "buzz"
-  a | 3.div? a| -> "fizz"
-  a             -> a.to_s
+  a |15.divide? a| -> "fizzbuzz"
+  a | 5.divide? a| -> "buzz"
+  a | 3.divide? a| -> "fizz"
+  a                -> a.to_s
 }
-fun div? : Int -> Int -> Bool = {
+fun divide? : Int -> Int -> Bool = {
   a b -> (b/a)*a == b
 }
 
