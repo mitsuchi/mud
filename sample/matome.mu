@@ -48,8 +48,8 @@ factorial 5   #=> 120
 
 # リスト上の写像
 fun map : [a] -> (a->b) -> [b] = {
-  []    f -> []
-  [e,es] f -> [f e] + map es f
+  []     f -> []
+  [e;es] f -> [f e] + map es f
 }
 
 map [1,2,3] double  #=> [2,4,6]
@@ -72,7 +72,7 @@ fun * : [Int] -> Int -> [Int] = xs y -> xs.map (a -> a * y)
 fun * : [Int] -> [Int] -> Int = {
   xs []  -> 0
   [] ys  -> 0
-  [x,xs] [y,ys] -> x * y + xs * ys
+  [x;xs] [y;ys] -> x * y + xs * ys
 }
 [1,2,3] * [4,5,6]    #=> 32
 
@@ -90,7 +90,7 @@ fun select : [a] -> (a -> Bool) -> [a] = {
 
 fun qsort : [a] -> [a] = {
     []    -> []
-    [e,es] -> es.select (x -> x < e : a -> Bool).qsort +
+    [e;es] -> es.select (x -> x < e : a -> Bool).qsort +
       ([e]+es).select (x -> x == e : a -> Bool) + 
       es.select (x -> x > e : a -> Bool).qsort
 }
