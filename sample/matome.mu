@@ -189,3 +189,10 @@ fun divide? : Int -> Int -> Bool = {
 fun triple = x -> x * 3
 triple 10 #=> 30
 triple "a" #=> "aaa"
+
+# なるべく楽して関数を定義する
+double' = x -> x + x
+double' 10    #=> 20
+
+double_s = x -> x + " " + x : String -> String
+double_s "hoge"   #=> "hoge hoge"

@@ -1,16 +1,16 @@
 fun length : [a] -> Int = {
   []    -> 0
-  [h,t] -> 1 + length t
+  [e;es] -> 1 + length es
 }
 
 fun map : [a] -> (a->b) -> [b] = {
   []    f -> []
-  [h,t] f -> [f h] + map t f
+  [e;es] f -> [f e] + map es f
 }
 
 fun reverse : [a] -> [a] = {
   []    -> []
-  [h,t] -> reverse t + [h]
+  [e;es] -> reverse es + [e]
 }
 
 fun uniq : [a] -> [a] = {
@@ -24,21 +24,21 @@ fun uniq : [a] -> [a] = {
 
 fun select : [a] -> (a -> Bool) -> [a] = {
   []    f -> []
-  [h,t] f -> if (h.f)
-    then ([h] + select t f)
-    else (select t f)
+  [e;es] f -> if (e.f)
+    then ([e] + select es f)
+    else (select es f)
 }
 
 fun qsort : [a] -> [a] = {
     []    -> []
-    [h,t] -> t.select (x -> x < h : a -> Bool).qsort +
-      ([h]+t).select (x -> x == h : a -> Bool) + 
-      t.select (x -> x > h : a -> Bool).qsort
+    [e;es] -> es.select (x -> x < e : a -> Bool).qsort +
+      ([e]+es).select (x -> x == e : a -> Bool) + 
+      es.select (x -> x > e : a -> Bool).qsort
 }
 
 fun foldr : [a] -> (a->b->b) -> a -> b = {
   []     f a -> a
-  [x,xs] f a -> f x (foldr xs f a)
+  [x;xs] f a -> f x (foldr xs f a)
 }
 
 fun sum : [a] -> a = es -> foldr es (x y -> x + y : a -> a) 0
