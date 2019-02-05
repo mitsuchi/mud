@@ -151,7 +151,7 @@ module Parse where
   listLit :: Parser Expr
   listLit = do
     symbol "["
-    exprs <- sepBy expr (symbol ",")
+    exprs <- sepBy expr (symbol "," <|> symbol ";")
     symboln "]"
     return $ ListLit exprs
 

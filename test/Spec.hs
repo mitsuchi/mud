@@ -102,7 +102,8 @@ main = do
       "20" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 10",
       "hello hello" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 'hello'",
       "3" ~=? pe "(x -> x + 2) 1",
-      "3" ~=? pe "1.(x -> x + 2)"
+      "3" ~=? pe "1.(x -> x + 2)",
+      "[4,3,2,1]" ~=? pe "fun reverse : [a] -> [a] = { [] -> []; [e;es] -> (reverse es) + [e] }; reverse [1,2,3,4]"
     ]
 
 pe :: String -> String
