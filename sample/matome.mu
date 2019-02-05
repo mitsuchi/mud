@@ -65,7 +65,9 @@ incr 'hello' #=> "hello one"
 # 多重ディスパッチ
 # （＝引数が複数ある場合、すべての引数の型の組み合わせごとに異なる関数が定義できる）
 # ベクトルの定数倍
-fun * : [Int] -> Int -> [Int] = xs y -> xs.map (a -> a * y)
+fun * : [Int] -> Int -> [Int] = {
+  xs y -> xs.map (a -> a * y)
+}
 [1,2,3] * 3    #=> [3,6,9]
 
 # ベクトルの内積
@@ -83,7 +85,7 @@ fun * : [Int] -> [Int] -> Int = {
 # リストのソート
 fun select : [a] -> (a -> Bool) -> [a] = {
   []     f -> []
-  [e,es] f -> if (e.f)
+  [e;es] f -> if (e.f)
     then ([e] + select es f)
     else (select es f)
 }
