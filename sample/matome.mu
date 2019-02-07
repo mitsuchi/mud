@@ -194,5 +194,5 @@ triple "a" #=> "aaa"
 double' = x -> x + x
 double' 10    #=> 20
 
-double_s = x -> x + " " + x : String -> String
-double_s "hoge"   #=> "hoge hoge"
+double' = x -> x + " " + x : String -> String
+double' "hoge"   #=> "hoge hoge"
