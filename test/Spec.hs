@@ -103,7 +103,8 @@ main = do
       "hello hello" ~=? pe "fun double = x -> x + x; fun double : String -> String = x -> x + ' ' + x; double 'hello'",
       "3" ~=? pe "(x -> x + 2) 1",
       "3" ~=? pe "1.(x -> x + 2)",
-      "[4,3,2,1]" ~=? pe "fun reverse : [a] -> [a] = { [] -> []; [e;es] -> (reverse es) + [e] }; reverse [1,2,3,4]"
+      "[4,3,2,1]" ~=? pe "fun reverse : [a] -> [a] = { [] -> []; [e;es] -> (reverse es) + [e] }; reverse [1,2,3,4]",
+      "function 'id : Int -> ?' already exists" ~=? pe "id = x -> x : Int -> Int; id = x -> x : Int -> Int"
     ]
 
 pe :: String -> String

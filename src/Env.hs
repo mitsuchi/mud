@@ -37,7 +37,7 @@ module Env where
       insertFun' name types expr env
       return $ Right env
     else
-      return $ Left ("function '" ++ name ++ "' already exists"  )
+      return $ Left ("function '" ++ name ++ " : " ++ argSig types ++ "' already exists")
 
   -- 同名の関数がある場合は、具体型の関数は先頭に、多相型の関数は末尾に追加する      
   insertFun' :: String -> DeepList String -> a -> GeneralEnv a -> IO (GeneralEnv a)

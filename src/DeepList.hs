@@ -23,6 +23,10 @@ module DeepList where
   -- listify (Elem x) = [show x]
   -- listify (Plain xs) = map dArrow xs
 
+  argSig :: DeepList String -> String
+  argSig (Elem x) = x
+  argSig (Plain xs) = (intercalate " -> " (map dArrow (init xs))) ++ " -> ?"
+
   dArrow :: DeepList String -> String
   dArrow (Elem x) = x
   dArrow (Plain xs) = "(" ++ intercalate " -> " (map dArrow xs) ++ ")"
