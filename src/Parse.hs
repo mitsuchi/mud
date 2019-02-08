@@ -182,7 +182,7 @@ module Parse where
   typeDef :: Parser Expr
   typeDef = do
     rword "type"
-    name <- identifier
+    name <- Var <$> identifier <*> getCode
     symbol "="
     symbol "{"
     types <- sepBy1 memberWithType (symbol ",")
@@ -200,7 +200,7 @@ module Parse where
   fundef :: Parser Expr
   fundef = do
     rword "fun"
-    name <- try identifier <|> operator
+    nameExpr <- try (Var <$> identifier <*> getCode) <|> (Var <$> operator <*> getCode)
     types' <- optional (symbol ":" *> typeList)
     symbol "="
     params <- some identifier
@@ -210,12 +210,12 @@ module Parse where
       Just list -> return list
       -- 型を省略した場合はもっとも一般的な型にしちゃう
       Nothing -> return $ makeGeneralType (length params)
-    return $ FunDef name types params body
+    return $ FunDef nameExpr types params body
   
   funDefCase :: Parser Expr
   funDefCase = do
     rword "fun"
-    name <- try identifier <|> try operator
+    nameExpr <- try (Var <$> identifier <*> getCode) <|> try (Var <$> operator <*> getCode) 
     types' <- optional (symbol ":" *> typeList)
     symbol "="
     symbol "{"
@@ -226,7 +226,7 @@ module Parse where
       Just list -> return list
       -- 型を省略した場合はもっとも一般的な型にしちゃう
       Nothing -> return $ makeGeneralType (paramNum matches) 
-    return $ FunDef name types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types) 
+    return $ FunDef nameExpr types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types)
       where 
         paramNum matches = length (fst3 (head matches))
         paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))

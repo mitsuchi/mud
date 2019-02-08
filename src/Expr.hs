@@ -14,7 +14,7 @@ module Expr where
   type Param = String
   type Type = String
   type Env = GeneralEnv Expr
-
+  
   data Code = Code { lineOfCode :: Int } deriving (Show)
   emptyCode = Code { lineOfCode = 0 }
 
@@ -25,8 +25,8 @@ module Expr where
     | Var Name Code
     | BinOp Op Code Expr Expr
     | Seq [Expr]
-    | Assign Name Expr
-    | FunDef Name (DeepList Type) [Param] Expr
+    | Assign NameExpr Expr
+    | FunDef NameExpr (DeepList Type) [Param] Expr
     | FunDefAnon (DeepList Type) [Param] Expr
     | Fun (DeepList Type) [Param] Expr Env
     | Apply Expr [Expr]
@@ -36,10 +36,12 @@ module Expr where
     | BoolLit Bool
     | If Expr Expr Expr -- If CondEx ThenEx ElseEx
     | Neg Expr
-    | TypeDef Name [(String, DeepList Type)]
+    | TypeDef NameExpr [(String, DeepList Type)]
     | StructType [(String, DeepList Type)]
     | StructValue (Map Name Expr)
     | Call Name
+
+  type NameExpr = Expr
 
   data Op
     = Mul
@@ -69,7 +71,7 @@ module Expr where
     show (BinOp op _ e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
     show (Fun types params body env) = "function : " ++ (show types)
-    show (FunDef name types params body) = "(Fun (" ++ name ++ ") " ++ (show body) ++ ")"
+    show (FunDef (Var name _) types params body) = "(Fun (" ++ name ++ ") " ++ (show body) ++ ")"
     show (FunDefAnon types params body) = "anon fun : " ++ (show types)
     show (Apply e1 e2) = "(" ++ show (e1) ++ " " ++ show (e2) ++ ")"
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
@@ -77,7 +79,7 @@ module Expr where
     show (BoolLit b) = show b
     show (If condEx thenEx elseEx) = "if " ++ show (condEx) ++ " then " ++ show thenEx ++ " else " ++ show elseEx
     show (Case exprs matches types) = "(Case " ++ (show matches) ++ ")"
-    show (TypeDef name types) = "(TypeDef " ++ name ++ " " ++ show types ++ ")"
+    show (TypeDef (Var name _) types) = "(TypeDef " ++ name ++ " " ++ show types ++ ")"
     show (StructType types) = "(StructType " ++ show types ++ ")"
     show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ Map.lookup "type" sv)) sv
       where f k a result = if k == "type" then result else result ++ " " ++ k ++ ":" ++ (show a)

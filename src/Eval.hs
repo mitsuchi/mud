@@ -33,10 +33,10 @@ module Eval where
       Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found")
       Just x -> return x
   eval (Neg expr) env = eval (BinOp (OpLit "-") emptyCode (IntLit 0) expr) env
-  eval (BinOp Eq _ (Var v _) e) env = do
+  eval (BinOp Eq _ v e) env = do
     e' <- eval e env
     eval (Assign v e') env  
-  eval (BinOp Dot _ e1 (Var v c)) env = eval (Apply (Var v c) [e1]) env
+  eval (BinOp Dot _ e1 var@(Var name code)) env = eval (Apply var [e1]) env
   eval (BinOp Dot _ e1 fun@(Fun types params expr outerEnv)) env = eval (Apply fun [e1]) env
   eval (BinOp Dot _ e1 (Apply expr args)) env = eval (Apply expr (e1 : args)) env
   eval (BinOp (OpLit lit) code e1 e2) env = eval (Apply (Var lit code) [e1, e2]) env  
@@ -48,18 +48,18 @@ module Eval where
   eval (Seq (e:es)) env = do
     eval e env
     eval (Seq es) env
-  eval (Assign name fun@(Fun types params expr outerEnv)) env = do
+  eval (Assign (Var name code) fun@(Fun types params expr outerEnv)) env = do
     res <- liftIO $ insertFun name types fun env
     case res of
-      Left message -> throwError message
+      Left message -> throwError $ (show $ lineOfCode code) ++ ":" ++ message
       Right env -> return expr
-  eval (Assign name expr) env = do
+  eval (Assign (Var name code) expr) env = do
     res <- liftIO $ insertVar name expr env
     case res of
-      Left message -> throwError message
+      Left message -> throwError $ (show $ lineOfCode code) ++ ":" ++ message
       Right env -> return expr
-  eval (FunDef name types params body) env = do
-    eval (Assign name (Fun types params body env)) env  
+  eval (FunDef nameExpr types params body) env = do
+    eval (Assign nameExpr (Fun types params body env)) env  
   eval (FunDefAnon types params body) env = do
     return $ Fun types params body env
   eval (Apply (Call name) args) env = call name args env emptyCode
@@ -99,10 +99,10 @@ module Eval where
       BoolLit True -> eval thenExpr env
       BoolLit False -> eval elseExpr env
       otherwise -> error ("cond = " ++ show (cond'))
-  eval (TypeDef name typeDef) env = do
+  eval (TypeDef (Var name code) typeDef) env = do
     forM_ typeDef $ \(member, (Plain [typeList])) -> do
-      eval (FunDef member (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct" emptyCode) [Var "x" emptyCode, StrLit member])) env
-    eval (FunDef name types params (Apply (Var "makeStruct" emptyCode) (StrLit name : map StrLit params))) env    
+      eval (FunDef (Var member code) (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct" emptyCode) [Var "x" emptyCode, StrLit member])) env
+    eval (FunDef (Var name code) types params (Apply (Var "makeStruct" emptyCode) (StrLit name : map StrLit params))) env    
     where types = typeDefToTypes typeDef
           params = map fst typeDef
   eval value@(StructValue structValue) env = return value
