@@ -153,7 +153,8 @@ module Parse where
     symbol "["
     exprs <- sepBy expr (symbol "," <|> symbol ";")
     symboln "]"
-    return $ ListLit exprs
+    code <- getCode
+    return $ ListLit exprs code
 
   seqExpr :: Parser Expr
   seqExpr = do

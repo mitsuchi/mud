@@ -10,8 +10,8 @@ module Primitive where
   import Expr
   
   call :: Name -> [Expr] -> Env -> Code -> ExceptT String IO Expr
-  call "head" [ListLit (e:es)] env _ = return e
-  call "tail" [ListLit (e:es)] env _ = return $ ListLit es
+  call "head" [ListLit (e:es) _] env _ = return e
+  call "tail" [ListLit (e:es) c] env _ = return $ ListLit es c
   call "puts" [e] env _ = do
     lift $ putStrLn (show e)
     return e
@@ -23,7 +23,7 @@ module Primitive where
       Nothing -> throwError ("can't find struct member '" ++ member ++ "'")
   call "to_s" [IntLit i] env _ = return $ StrLit (show i)
   call "to_s" [DoubleLit d] env _ = return $ StrLit (show d)
-  call "to_s" [ListLit l] env _ = return $ StrLit (show l)
+  call "to_s" [ListLit l _] env _ = return $ StrLit (show l)
   call "to_s" [BoolLit b] env _ = return $ StrLit (show b)
   call "debug" [StrLit "env", StrLit s] env _ = do
     env' <- liftIO $ readIORef env
@@ -34,7 +34,7 @@ module Primitive where
   call "+" [IntLit i1, IntLit i2] env _ = return $ IntLit (i1+i2)
   call "+" [DoubleLit f1, DoubleLit f2] env _ = return $ DoubleLit (f1+f2)
   call "+" [StrLit i1, StrLit i2] env _ = return $ StrLit (i1++i2)
-  call "+" [ListLit l1, ListLit l2] env _ = return $ ListLit (l1++l2)
+  call "+" [ListLit l1 c1, ListLit l2 c2] env _ = return $ ListLit (l1++l2) c1
   call "+" [BoolLit b1, BoolLit b2] env _ = return $ BoolLit (b1 || b2)
   call "+" [IntLit i1, DoubleLit f2] env _ = return $ DoubleLit (fromIntegral i1 + f2)
   call "+" [DoubleLit f1, IntLit i2] env _ = return $ DoubleLit (f1 + fromIntegral i2)  
@@ -55,7 +55,7 @@ module Primitive where
   call "==" [IntLit i1, IntLit i2] env _ = return $ BoolLit (i1 == i2)  
   call "==" [StrLit s1, StrLit s2] env _ = return $ BoolLit (s1 == s2)
   call "==" [BoolLit b1, BoolLit b2] env _ = return $ BoolLit (b1 == b2)  
-  call "==" [ListLit l1, ListLit l2] env _ = return $ BoolLit (l1 == l2)    
+  call "==" [ListLit l1 _, ListLit l2 _] env _ = return $ BoolLit (l1 == l2)    
   call "<" [IntLit i1, IntLit i2] env _ = return $ BoolLit (i1 < i2)  
   call "<" [DoubleLit i1, DoubleLit i2] env _ = return $ BoolLit (i1 < i2)
   call "<" [IntLit i1, DoubleLit i2] env _ = return $ BoolLit (fromIntegral i1 < i2)
@@ -88,52 +88,55 @@ module Primitive where
 
   insertPrimitives :: Env -> IO Env
   insertPrimitives env = do
-    insertFun' "debug" (Plain [Elem "String", Elem "String", Elem "String"]) (Call "debug") env    
-    insertFun' "to_s" (Plain [Elem "Int", Elem "String"]) (Call "to_s") env
-    insertFun' "to_s" (Plain [Elem "Double", Elem "String"]) (Call "to_s") env
-    insertFun' "to_s" (Plain [Plain [Elem "List", Elem "a"], Elem "String"]) (Call "to_s") env
-    insertFun' "to_s" (Plain [Elem "Bool", Elem "String"]) (Call "to_s") env
-    insertFun' "+" (Plain [Elem "Int", Elem "Int", Elem "Int"]) (Call "+") env
-    insertFun' "+" (Plain [Elem "String", Elem "String", Elem "String"]) (Call "+") env
-    insertFun' "+" (Plain [Elem "Double", Elem "Double"]) (Call "+") env
-    insertFun' "+" (Plain [Elem "String", Elem "String"]) (Call "+") env
-    insertFun' "+" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]]) (Call "+") env
-    insertFun' "+" (Plain [Elem "Bool", Elem "Bool"]) (Call "+") env
-    insertFun' "+" (Plain [Elem "Int", Elem "Double"]) (Call "+") env
-    insertFun' "+" (Plain [Elem "Double", Elem "Int"]) (Call "+") env
-    insertFun' "-" (Plain [Elem "Int", Elem "Int"]) (Call "-") env
-    insertFun' "-" (Plain [Elem "Double", Elem "Double"]) (Call "-") env
-    insertFun' "-" (Plain [Elem "Int", Elem "Double"]) (Call "-") env
-    insertFun' "-" (Plain [Elem "Double", Elem "Int"]) (Call "-") env
-    insertFun' "*" (Plain [Elem "Int", Elem "Int"]) (Call "*") env
-    insertFun' "*" (Plain [Elem "Double", Elem "Double"]) (Call "*") env
-    insertFun' "*" (Plain [Elem "String", Elem "Int"]) (Call "*") env
-    insertFun' "*" (Plain [Elem "Bool", Elem "Bool"]) (Call "*") env
-    insertFun' "*" (Plain [Elem "Int", Elem "Double"]) (Call "*") env
-    insertFun' "*" (Plain [Elem "Double", Elem "Int"]) (Call "*") env
-    insertFun' "/" (Plain [Elem "Int", Elem "Int"]) (Call "/") env
-    insertFun' "/" (Plain [Elem "Double", Elem "Double"]) (Call "/") env
-    insertFun' "/" (Plain [Elem "Int", Elem "Double"]) (Call "/") env
-    insertFun' "/" (Plain [Elem "Double", Elem "Int"]) (Call "/") env
-    insertFun' "==" (Plain [Elem "Int", Elem "Int"]) (Call "==") env
-    insertFun' "==" (Plain [Elem "String", Elem "String"]) (Call "==") env
-    insertFun' "==" (Plain [Elem "Bool", Elem "Bool"]) (Call "==") env
-    insertFun' "==" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]] ) (Call "==") env
-    insertFun' "<" (Plain [Elem "Int", Elem "Int"]) (Call "<") env
-    insertFun' "<" (Plain [Elem "Double", Elem "Double"]) (Call "<") env
-    insertFun' "<" (Plain [Elem "Int", Elem "Double"]) (Call "<") env
-    insertFun' "<" (Plain [Elem "Double", Elem "Int"]) (Call "<") env
-    insertFun' "<=" (Plain [Elem "Int", Elem "Int"]) (Call "<=") env
-    insertFun' "<=" (Plain [Elem "Double", Elem "Double"]) (Call "<=") env
-    insertFun' "<=" (Plain [Elem "Int", Elem "Double"]) (Call "<=") env
-    insertFun' "<=" (Plain [Elem "Double", Elem "Int"]) (Call "<=") env
-    insertFun' ">" (Plain [Elem "Int", Elem "Int"]) (Call ">") env
-    insertFun' ">" (Plain [Elem "Double", Elem "Double"]) (Call ">") env
-    insertFun' ">" (Plain [Elem "Int", Elem "Double"]) (Call ">") env
-    insertFun' ">" (Plain [Elem "Double", Elem "Int"]) (Call ">") env
-    insertFun' ">=" (Plain [Elem "Int", Elem "Int"]) (Call ">=") env
-    insertFun' ">=" (Plain [Elem "Double", Elem "Double"]) (Call ">=") env
-    insertFun' ">=" (Plain [Elem "Int", Elem "Double"]) (Call ">=") env
-    insertFun' ">=" (Plain [Elem "Double", Elem "Int"]) (Call ">=") env
-    insertFun' "&&" (Plain [Elem "Bool", Elem "Bool"]) (Call "&&") env
-    insertFun' "||" (Plain [Elem "Bool", Elem "Bool"]) (Call "||") env
+    insertCall "debug" (Plain [Elem "String", Elem "String", Elem "String"]) env    
+    insertCall "to_s" (Plain [Elem "Int", Elem "String"]) env
+    insertCall "to_s" (Plain [Elem "Double", Elem "String"]) env
+    insertCall "to_s" (Plain [Plain [Elem "List", Elem "a"], Elem "String"]) env
+    insertCall "to_s" (Plain [Elem "Bool", Elem "String"]) env
+    insertCall "+" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "+" (Plain [Elem "String", Elem "String", Elem "String"]) env
+    insertCall "+" (Plain [Elem "Double", Elem "Double", Elem "Souble"]) env
+    insertCall "+" (Plain [Elem "String", Elem "String", Elem "String"]) env
+    insertCall "+" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]]) env
+    insertCall "+" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "+" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "+" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "-" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "-" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
+    insertCall "-" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "-" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "*" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "*" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
+    insertCall "*" (Plain [Elem "String", Elem "Int", Elem "String"]) env
+    insertCall "*" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "*" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "*" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "/" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "/" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
+    insertCall "/" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "/" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "==" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall "==" (Plain [Elem "String", Elem "String", Elem "Bool"]) env
+    insertCall "==" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "==" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"], Elem "Bool"] ) env
+    insertCall "<" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall "<" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall "<" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall "<" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall "<=" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall "<=" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall "<=" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall "<=" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall ">" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall ">" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall ">" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall ">" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall ">=" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall ">=" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall ">=" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall ">=" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall "&&" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "||" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+
+  insertCall :: String -> DeepList Type -> Env -> IO Env
+  insertCall name types env = insertFun' name types (Call name types) env

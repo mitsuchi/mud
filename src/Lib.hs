@@ -14,10 +14,21 @@ module Lib where
   import Parse
   import Primitive
   import TypeUtil
+  import TypeEval
 
   pa :: String -> Either (ParseErrorBundle String Void) Expr
   pa program = parse topLevel "<stdin>" program
   
+  te :: String -> IO ()
+  te program = case pa program of
+    Right expr -> runTypeEval expr
+    Left bundle -> putStr (errorBundlePretty bundle)
+
+  tef :: String -> IO ()
+  tef file = do 
+    program <- readFile file
+    te program
+
   ev :: String -> IO ()
   ev program = case pa program of
     Right expr -> runEval expr
@@ -54,6 +65,15 @@ module Lib where
     expr' <- runExceptT (eval expr env)
     case expr' of 
       Right val -> putStr ""
+      Left error -> putStrLn error
+
+  runTypeEval :: Expr -> IO ()
+  runTypeEval expr = do
+    env <- newIORef Map.empty
+    insertPrimitives env
+    typeSig <- runExceptT (typeEval expr env)
+    case typeSig of
+      Right val -> putStrLn (show typeSig)
       Left error -> putStrLn error
 
   repl :: IO ()

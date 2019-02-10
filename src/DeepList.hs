@@ -3,6 +3,10 @@ module DeepList where
 
   data DeepList a = Elem a | Plain [DeepList a] deriving Show
 
+  dArgs :: DeepList a -> [DeepList a]
+  dArgs (Elem x) = [Elem x]
+  dArgs (Plain xs) = init xs
+
   dInit :: DeepList a -> DeepList a
   dInit (Elem x) = Elem x
   dInit (Plain xs) = Plain (init xs)
@@ -29,6 +33,7 @@ module DeepList where
 
   dArrow :: DeepList String -> String
   dArrow (Elem x) = x
+  dArrow (Plain [Elem "List", Elem e]) = "[" ++ e ++ "]"
   dArrow (Plain xs) = "(" ++ intercalate " -> " (map dArrow xs) ++ ")"
 
   listify :: DeepList String -> [String]

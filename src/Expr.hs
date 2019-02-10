@@ -32,14 +32,15 @@ module Expr where
     | Apply Expr [Expr]
     | Case [Expr] [([Expr],Expr,Maybe Expr)] (DeepList Type)
     | TypeSig (DeepList Type) Expr
-    | ListLit [Expr]
+    | TypeLit (DeepList Type)
+    | ListLit [Expr] Code
     | BoolLit Bool
     | If Expr Expr Expr -- If CondEx ThenEx ElseEx
     | Neg Expr
     | TypeDef NameExpr [(String, DeepList Type)]
     | StructType [(String, DeepList Type)]
     | StructValue (Map Name Expr)
-    | Call Name
+    | Call Name (DeepList Type)
 
   type NameExpr = Expr
 
@@ -75,7 +76,7 @@ module Expr where
     show (FunDefAnon types params body) = "anon fun : " ++ (show types)
     show (Apply e1 e2) = "(" ++ show (e1) ++ " " ++ show (e2) ++ ")"
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
-    show (ListLit exprs) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
+    show (ListLit exprs _) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
     show (BoolLit b) = show b
     show (If condEx thenEx elseEx) = "if " ++ show (condEx) ++ " then " ++ show thenEx ++ " else " ++ show elseEx
     show (Case exprs matches types) = "(Case " ++ (show matches) ++ ")"
@@ -83,12 +84,12 @@ module Expr where
     show (StructType types) = "(StructType " ++ show types ++ ")"
     show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ Map.lookup "type" sv)) sv
       where f k a result = if k == "type" then result else result ++ " " ++ k ++ ":" ++ (show a)
-    show (Call name) = "(Call " ++ name ++ ")"
+    show (Call name _) = "(Call " ++ name ++ ")"
   
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
     (StrLit s1) == (StrLit s2) = s1 == s2
-    (ListLit l1) == (ListLit l2) = l1 == l2
+    (ListLit l1 c1) == (ListLit l2 c2) = l1 == l2
     (BoolLit b1) == (BoolLit b2) = b1 == b2
     e1 == e2 = trace (show (e1,e2)) $ False
 
@@ -103,8 +104,8 @@ module Expr where
   typeOf' (DoubleLit b) = Elem "Double"
   typeOf' (TypeSig sig _) = sig
   typeOf' (Fun sig _ _ _) = sig
-  typeOf' (ListLit (e:es)) = Plain [Elem "List", typeOf' e]
-  typeOf' (ListLit []) = Plain [Elem "List", Elem "a"]
+  typeOf' (ListLit (e:es) _) = Plain [Elem "List", typeOf' e]
+  typeOf' (ListLit [] _) = Plain [Elem "List", Elem "a"]
   typeOf' (StructValue s) = case Map.lookup "type" s of
     Just (StrLit str) -> Elem str
     Nothing           -> error "type not defined in struct value"
@@ -113,8 +114,8 @@ module Expr where
   paramsAndArgs [] [] = ([],[])
   paramsAndArgs ((Var v _):e1s) (e:e2s) = let rests = paramsAndArgs e1s e2s
                                       in (v : (fst rests), e : (snd rests))
-  paramsAndArgs (ListLit [(Var h _),(Var t _)]:e1s) (ListLit (e2:e2'):e2s) = 
+  paramsAndArgs (ListLit [(Var h _),(Var t _)] c1 : e1s) (ListLit (e2:e2') c2 : e2s) = 
     let rests = paramsAndArgs e1s e2s
-    in (h : t : (fst rests), e2 : (ListLit e2') : (snd rests))
+    in (h : t : (fst rests), e2 : (ListLit e2' c2) : (snd rests))
   paramsAndArgs (e1:e1s) (e2:e2s) = paramsAndArgs e1s e2s
   

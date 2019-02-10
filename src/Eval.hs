@@ -20,9 +20,9 @@ module Eval where
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
   eval (DoubleLit f) env = return $ DoubleLit f
-  eval (ListLit es) env = do
+  eval (ListLit es c) env = do
     es' <- mapM (\e -> eval e env) es
-    return $ ListLit es'
+    return $ ListLit es' c
   eval (Var "True" _) env = return $ BoolLit True
   eval (Var "False" _) env = return $ BoolLit False
   eval (Var name c) env = do
@@ -62,7 +62,7 @@ module Eval where
     eval (Assign nameExpr (Fun types params body env)) env  
   eval (FunDefAnon types params body) env = do
     return $ Fun types params body env
-  eval (Apply (Call name) args) env = call name args env emptyCode
+  eval (Apply (Call name _) args) env = call name args env emptyCode
   eval (Apply (Fun types params body outerEnv) args) env = do
     varMap <- liftIO $ readIORef outerEnv
     env' <- liftIO $ newEnv params args varMap
@@ -121,8 +121,8 @@ module Eval where
   matchCond :: [Expr] -> [Expr] -> Maybe Expr -> (Map String Expr) -> Env -> IO Bool
   matchCond (IntLit i:e1s) (IntLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
   matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
-  matchCond ((ListLit l1):e1s) ((ListLit [Var h _, Var t _]):e2s) guard varMap env = matchCond e1s e2s guard varMap env
-  matchCond ((ListLit l1):e1s) ((ListLit l2):e2s) guard varMap env = if l1 == l2 then matchCond e1s e2s guard varMap env else return False
+  matchCond ((ListLit l1 _):e1s) ((ListLit [Var h _, Var t _] _):e2s) guard varMap env = matchCond e1s e2s guard varMap env
+  matchCond ((ListLit l1 _):e1s) ((ListLit l2 _):e2s) guard varMap env = if l1 == l2 then matchCond e1s e2s guard varMap env else return False
   matchCond (e0:e1s) ((Var v _):e2s) guard varMap env = case Map.lookup v varMap of
     Nothing -> matchCond e1s e2s guard (Map.insert v e0 varMap) env
     Just e  -> if e == e0
