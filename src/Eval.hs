@@ -122,7 +122,6 @@ module Eval where
   matchCond (IntLit i:e1s) (IntLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
   matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
   matchCond (StrLit i:e1s) (StrLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
-  matchCond (StructValue i:e1s) (StructValue j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
   matchCond ((ListLit l1 _):e1s) ((ListLit [Var h _, Var t _] _):e2s) guard varMap env = matchCond e1s e2s guard varMap env
   matchCond ((ListLit l1 _):e1s) ((ListLit l2 _):e2s) guard varMap env = if l1 == l2 then matchCond e1s e2s guard varMap env else return False
   matchCond (e0:e1s) ((Var v _):e2s) guard varMap env = case Map.lookup v varMap of
