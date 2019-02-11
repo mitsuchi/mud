@@ -104,7 +104,8 @@ main = do
       "3" ~=? pe "(x -> x + 2) 1",
       "3" ~=? pe "1.(x -> x + 2)",
       "[4,3,2,1]" ~=? pe "fun reverse : [a] -> [a] = { [] -> []; [e;es] -> (reverse es) + [e] }; reverse [1,2,3,4]",
-      "1:function 'id : Int -> ?' already exists" ~=? pe "id = x -> x : Int -> Int; id = x -> x : Int -> Int"
+      "1:function 'id : Int -> ?' already exists" ~=? pe "id = x -> x : Int -> Int; id = x -> x : Int -> Int",
+      "two" ~=? pe "fun inc : String -> String = { 'one' -> 'two' }; inc 'one'"
     ]
 
 pe :: String -> String
