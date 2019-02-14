@@ -1,5 +1,13 @@
-fun smallest_devisor : Int -> Int = n -> {
-    find_devisor n 2
+fun remainder : Int -> Int -> Int = {
+    a b -> a - (a / b) * b
+}
+
+fun devides? : Int -> Int -> Bool = {
+    a b -> 0 == remainder b a 
+}
+
+fun square : Int -> Int = {
+    n -> n * n
 }
 
 fun find_devisor : Int -> Int -> Int = n test_devisor -> {
@@ -10,20 +18,12 @@ fun find_devisor : Int -> Int -> Int = n test_devisor -> {
         else find_devisor n (test_devisor+1)
 }
 
-fun devides? : Int -> Int -> Bool = {
-    a b -> 0 == remainder b a 
+fun smallest_devisor : Int -> Int = n -> {
+    find_devisor n 2
 }
 
 fun prime? : Int -> Bool = {
     n -> n == smallest_devisor n
-}
-
-fun remainder : Int -> Int -> Int = {
-    a b -> a - (a / b) * b
-}
-
-fun square : Int -> Int = {
-    n -> n * n
 }
 
 puts (prime? 3539)

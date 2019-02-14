@@ -1,3 +1,7 @@
+fun div? : Int -> Int -> Bool = {
+  a b -> (b/a)*a == b
+}
+
 fun fizzbuzz : Int -> String = {
   a |15.div? a| -> "fizzbuzz"
   a | 5.div? a| -> "buzz"
@@ -5,13 +9,9 @@ fun fizzbuzz : Int -> String = {
   a             -> a.to_s
 }
 
-fun div? : Int -> Int -> Bool = {
-  a b -> (b/a)*a == b
-}
-
 fun each : [a] -> (a->b) -> [b] = {
   []     f -> []
-  [e,es] f -> [f e] + each es f
+  [e;es] f -> [f e] + each es f
 }
 
 fun range : Int -> Int -> [Int] = {
@@ -23,4 +23,3 @@ fun range : Int -> Int -> [Int] = {
 (range 1 15).each {
   x -> puts (fizzbuzz x)
 }
-

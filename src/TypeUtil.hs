@@ -5,6 +5,7 @@ module TypeUtil where
   import DeepList
 
   findTypeEnv :: DeepList String -> DeepList String -> Map String (DeepList String) -> Bool -> Maybe (Map String (DeepList String))
+  --findTypeEnv (Elem a) (Elem b) env strict | (isUpper (a!!0) && isUpper (b!!0)) = Just env
   findTypeEnv (Elem a) (Elem b) env strict | (not strict && isUpper (a!!0) && isUpper (b!!0) ) || strict =
     if a == b then (Just env) else Nothing
   findTypeEnv (Elem a) (Elem b) env strict | (not strict && isLower (b!!0) ) || strict =
@@ -19,6 +20,7 @@ module TypeUtil where
   findTypeEnv (Plain as) (Elem b) env strict = Nothing
   findTypeEnv (Plain []) (Plain bs) env strict = Just env
   findTypeEnv (Plain as) (Plain []) env strict = Just env
+  --findTypeEnv (Plain (a:[])) (Plain (b:[])) env strict = Just env
   findTypeEnv (Plain (a:as)) (Plain (b:bs)) env strict =
     case findTypeEnv a b env strict of
       Nothing -> Nothing
@@ -26,8 +28,17 @@ module TypeUtil where
   findTypeEnv t1 t2 env strict = error ("findTypeEnv fail, t1 = " ++ (show t1) ++ ", t2 = " ++ (show t2))  
 
   isConcrete :: DeepList String -> Bool
-  isConcrete (Elem a) = isUpper (a!!0)
+  isConcrete (Elem a) = (a == "List") || isUpper (a!!0)
   isConcrete (Plain xs) = and (map isConcrete xs)
+
+  isVariable :: DeepList String -> Bool
+  isVariable (Elem a) = (a == "List") || isLower (a!!0)
+  isVariable (Plain xs) = and (map isVariable xs)
+
+  -- 型にひとつでも型変数を含むか？
+  hasVariable :: DeepList String -> Bool
+  hasVariable (Elem a) = isLower (a!!0)
+  hasVariable (Plain xs) = or (map isVariable xs)  
 
   generalizeTypeSig :: DeepList String -> DeepList String
   generalizeTypeSig list = gnrlize' list (makeMap (dFlatten list))
@@ -57,3 +68,15 @@ module TypeUtil where
   -- Plain [Elem "Int", Elem "Int"]
   typeDefToTypes :: [(String, DeepList String)] -> DeepList String
   typeDefToTypes es = Plain (foldMap ((++) . (\(Plain x) -> x) . snd) es [])
+
+  generalizeTypesWith :: String -> DeepList String -> DeepList String
+  generalizeTypesWith str list = gnrlizeWith str list (makeMap (dFlatten list))
+
+  gnrlizeWith :: String -> DeepList String -> Map String Int -> DeepList String
+  gnrlizeWith str (Elem e) table = case Map.lookup e table of
+    Nothing -> Elem e
+    Just i -> Elem (str ++ show i)
+  gnrlizeWith str (Plain []) table = Plain []
+  gnrlizeWith str (Plain (e:es)) table = 
+    let (Plain rest') = (gnrlizeWith str (Plain es) table)
+    in Plain ((gnrlizeWith str e table) : rest')

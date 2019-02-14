@@ -58,18 +58,29 @@ module Env where
       Just expr -> return $ True
 
   
+  -- 
   lookupFun :: (Show a) => String -> DeepList String -> GeneralEnv a -> Bool -> IO (Maybe a)
   lookupFun name types env strict = do
     env' <- readIORef env
     return $ do
       funs <- Map.lookup name env'
-      firstMatch (generalizeTypeSig types) funs strict
+      if hasVariable types
+        then let fun' = firstMatch (generalizeTypeSig types) funs strict True
+          in case fun' of
+            Nothing -> firstMatch (generalizeTypeSig types) funs strict False
+            Just fun -> fun'
+        else firstMatch (generalizeTypeSig types) funs strict False
 
-  firstMatch :: DeepList String -> [(DeepList String, a)] -> Bool -> Maybe a
-  firstMatch types [] strict = Nothing
-  firstMatch types ((types', expr):es) strict = case findTypeEnv types' types Map.empty strict of
-    Nothing -> firstMatch types es strict
-    Just env -> Just expr    
+  firstMatch :: (Show a) => DeepList String -> [(DeepList String, a)] -> Bool -> Bool -> Maybe a
+  firstMatch types [] strict ignoreConcrete = Nothing
+  --firstMatch types ((types', expr):es) strict ignoreConcrete = case findTypeEnv types' types Map.empty strict of
+  firstMatch types ((types', expr):es) strict ignoreConcrete = case findTypeEnv types' types Map.empty strict of
+    Nothing -> firstMatch types es strict ignoreConcrete
+    Just env -> if ignoreConcrete 
+      then if isConcrete types'
+        then firstMatch types es strict ignoreConcrete
+        else Just expr
+      else Just expr
 
   -- 変数を環境に登録する
   -- 同名の変数がない場合のみ登録できる

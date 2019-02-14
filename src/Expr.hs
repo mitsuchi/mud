@@ -85,7 +85,7 @@ module Expr where
     show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ Map.lookup "type" sv)) sv
       where f k a result = if k == "type" then result else result ++ " " ++ k ++ ":" ++ (show a)
     show (Call name _) = "(Call " ++ name ++ ")"
-  
+    show (TypeLit types) = "(TypeLit " ++ show types ++ ")"
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
     (StrLit s1) == (StrLit s2) = s1 == s2

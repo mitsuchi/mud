@@ -88,6 +88,9 @@ module Primitive where
 
   insertPrimitives :: Env -> IO Env
   insertPrimitives env = do
+    insertCall "puts" (Plain [Elem "a", Elem "String"]) env    
+    insertCall "head" (Plain [Plain [Elem "List", Elem "a"], Elem "a"]) env    
+    insertCall "tail" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]]) env    
     insertCall "debug" (Plain [Elem "String", Elem "String", Elem "String"]) env    
     insertCall "to_s" (Plain [Elem "Int", Elem "String"]) env
     insertCall "to_s" (Plain [Elem "Double", Elem "String"]) env
@@ -123,6 +126,7 @@ module Primitive where
     insertCall "<" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
     insertCall "<" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
     insertCall "<" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall "<" (Plain [Elem "a", Elem "a", Elem "Bool"]) env
     insertCall "<=" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
     insertCall "<=" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
     insertCall "<=" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
