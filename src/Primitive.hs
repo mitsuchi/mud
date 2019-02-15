@@ -8,6 +8,7 @@ module Primitive where
   import DeepList
   import Env
   import Expr
+  import TypeUtil
   
   call :: Name -> [Expr] -> Env -> Code -> ExceptT String IO Expr
   call "head" [ListLit (e:es) _] env _ = return e
@@ -119,9 +120,11 @@ module Primitive where
     insertCall "/" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
     insertCall "/" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
     insertCall "==" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall "==" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
     insertCall "==" (Plain [Elem "String", Elem "String", Elem "Bool"]) env
     insertCall "==" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
     insertCall "==" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"], Elem "Bool"] ) env
+    insertCall "==" (Plain [Elem "a", Elem "a", Elem "Bool"]) env
     insertCall "<" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
     insertCall "<" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
     insertCall "<" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
@@ -131,16 +134,19 @@ module Primitive where
     insertCall "<=" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
     insertCall "<=" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
     insertCall "<=" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall "<=" (Plain [Elem "a", Elem "a", Elem "Bool"]) env    
     insertCall ">" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
     insertCall ">" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
     insertCall ">" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
     insertCall ">" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall ">" (Plain [Elem "a", Elem "a", Elem "Bool"]) env    
     insertCall ">=" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
     insertCall ">=" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
     insertCall ">=" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
     insertCall ">=" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall ">=" (Plain [Elem "a", Elem "a", Elem "Bool"]) env    
     insertCall "&&" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
     insertCall "||" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
 
   insertCall :: String -> DeepList Type -> Env -> IO Env
-  insertCall name types env = insertFun' name types (Call name types) env
+  insertCall name types env = insertFun' name types (Call name (generalizeTypeSig types)) env

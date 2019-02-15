@@ -12,6 +12,6 @@ fun foldr : (a->b->b) -> b -> [a] -> b = {
 
 foldr insert [] [1,2,3]
 
-#fun isort : [a] -> [a] = {
-#  es -> foldr insert [] es
-#}
+fun isort : [a] -> [a] = {
+  es -> foldr insert [] es
+}

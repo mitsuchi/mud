@@ -65,16 +65,16 @@ module Env where
     return $ do
       funs <- Map.lookup name env'
       if hasVariable types
-        then let fun' = firstMatch (generalizeTypeSig types) funs strict True
+        then let fun' = firstMatch (generalizeTypesWith "x" types) funs strict True
           in case fun' of
-            Nothing -> firstMatch (generalizeTypeSig types) funs strict False
+            Nothing -> firstMatch (generalizeTypesWith "x" types) funs strict False
             Just fun -> fun'
-        else firstMatch (generalizeTypeSig types) funs strict False
+        else firstMatch (generalizeTypesWith "x" types) funs strict False
 
   firstMatch :: (Show a) => DeepList String -> [(DeepList String, a)] -> Bool -> Bool -> Maybe a
   firstMatch types [] strict ignoreConcrete = Nothing
-  --firstMatch types ((types', expr):es) strict ignoreConcrete = case findTypeEnv types' types Map.empty strict of
-  firstMatch types ((types', expr):es) strict ignoreConcrete = case findTypeEnv types' types Map.empty strict of
+  firstMatch types ((types', expr):es) strict ignoreConcrete = 
+    case (if strict then findTypeEnv types' types Map.empty True else unify (dInit types') types Map.empty) of
     Nothing -> firstMatch types es strict ignoreConcrete
     Just env -> if ignoreConcrete 
       then if isConcrete types'

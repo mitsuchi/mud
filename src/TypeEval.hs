@@ -56,7 +56,7 @@ module TypeEval where
     var <- liftIO $ lookupVarLoose name env
     env' <- liftIO $ readIORef env
     case var of
-      Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found")
+      Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found. env=" ++ (show env'))
       Just (TypeLit x) -> return x
       Just (Fun types _ _ _) -> return types
       --otherwise -> throwError $ show var
@@ -86,7 +86,9 @@ module TypeEval where
     xs <- return $ generalizeTypesWith "x" (Plain args')
     case unify (dInit ts) xs M.empty of
       Nothing -> throwError ((show $ lineOfCode code) ++ "ts:" ++ (show ts) ++ ",xs:" ++ (show xs) ++ ":fugafuga type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found.")
-      Just typeEnv -> return $ typeInst (dLast ts) (M.map (\e -> typeInst e typeEnv) typeEnv)
+      --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (dLast ts) (M.map (\e -> typeInst e typeEnv) typeEnv)
+      Just typeEnv -> let env1 = M.map (\e -> typeInst e typeEnv) typeEnv
+        in return $ typeInst (dLast ts) $ M.mapWithKey (\k e -> cancelXs k e env1) env1
     --typeEnv <- return $ findTypeEnv (dInit types) (Plain args') M.empty False      
     -- case typeEnv of
     --   Just tenv -> return $ typeInst (dLast types) tenv
@@ -99,7 +101,8 @@ module TypeEval where
     case unify (dInit ts) xs M.empty of
       Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map dArrow args')
       --Just typeEnv -> return $ dLast types
-      Just typeEnv -> return $ typeInst (dLast ts) (M.map (\e -> typeInst e typeEnv) typeEnv)
+      Just typeEnv -> let env1 = M.map (\e -> typeInst e typeEnv) typeEnv
+        in return $ typeInst (dLast ts) $ M.mapWithKey (\k e -> cancelXs k e env1) env1
   typeEval (Apply expr args) env = do
     expr' <- typeEval expr env
     typeEval (Apply (TypeLit expr') args) env        
@@ -127,11 +130,13 @@ module TypeEval where
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
     env' <- liftIO $ newEnv params (map TypeLit (dArgs types)) varMap
+    varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
     case findTypeEnv types (dAppend (dInit types) (Plain [body'])) M.empty False of
       Just env0 -> return $ types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"    
-  typeEval (Case es matchPairs (Plain types)) env = do
+  typeEval (Case es matchPairs (Plain types')) env = do
+    (Plain types) <- return $ generalizeTypeSig (Plain types')
     matchAll <- liftIO $ andM $ map ( \(args, body, guard) -> do
       (bool, typeEnv) <- matchCondType (init types) args guard M.empty env
       bool' <- if bool then matchResultType body (last types) typeEnv env else return False
@@ -149,9 +154,11 @@ module TypeEval where
     env' <- newIORef varMap'
     mapM_ (\(name, types) -> insertAny (name, TypeLit types) env') (M.toList typeEnv)
     bodyType <- runExceptT $ typeEval body env'
+    --trace ("bodyType: " ++ (show bodyType) ++ ", types: " ++ (show types)) $ return True
     case bodyType of
       Left error -> return False
-      Right bodyType' -> case findTypeEnv types bodyType' typeEnv False of
+      --Right bodyType' -> case findTypeEnv types bodyType' typeEnv False of
+      Right bodyType' -> case unify types bodyType' typeEnv of
         Just env0 -> return True
         Nothing -> return False
 
@@ -230,51 +237,7 @@ module TypeEval where
     Nothing -> Elem a
   typeInst (Plain es) env = Plain (map (\e -> typeInst e env) es)
 
-  -- 関数の型と実際の引数の型との対応をもとに、型環境を作る
-  -- 引数
-  -- 1. 関数の型のうち、返り値をのぞいた型のリスト。例：(a->b)->a->b なら [Plain [Elem "a", Elem "b"], Elem "a"]
-  -- 2. 引数の型のリスト。例：[Elem "String", Elem "Int"]
-  -- あれそれって、findTypeEnv だな。でした。
-  -- でも別につくってみる。対応が矛盾する場合には Nothing を返す。あれば Just 型環境を返す（空かもしれない）
-  unify :: DeepList Type -> DeepList Type -> M.Map Type (DeepList Type) -> Maybe (M.Map Type (DeepList Type))
-  unify a b env | isConcrete a && isConcrete b = 
-    -- 両方とも具体型の場合は、一致するかどうかを見る
-    if a == b then Just env else Nothing
-  unify (Elem a) b env | isLower(a!!0) =
-    -- 関数が型変数の場合は、環境に a:b を追加する。衝突する場合は衝突処理を行う。
-    -- ただし a = b の自明な場合は追加しない
-    if (Elem a) == b then Just env else push a b env
-  unify a (Elem b) env | isLower(b!!0) =
-    -- 引数が型変数の場合は、環境に b:a を追加する。衝突する場合は衝突処理を行う。
-    push b a env
-  unify (Plain (a:as)) (Plain (b:bs)) env =
-    -- リストどうしの場合は、最初の要素を unify して、成功するなら残りを unify する
-    case unify a b env of
-      Nothing -> Nothing
-      Just env' -> unify (Plain as) (Plain bs) env'
-  unify _ _ _ = Nothing -- 上記以外の場合は失敗
-
-  push :: Type -> DeepList Type -> M.Map Type (DeepList Type) -> Maybe (M.Map Type (DeepList Type))
-  push t x env = 
-    -- 環境から ft をキーとする型を引いてくる
-    case M.lookup t env of
-      -- なにもなければ、単に環境に追加する
-      Nothing -> Just (M.insert t x env)
-      -- 既存に登録(x0)がある場合は、既存と新規の型の種類に応じて場合分けする
-      Just x0 -> case (x0, x) of
-        (x0, x)
-          -- x0が具体型、xが具体型の場合。
-          -- x0 と x が一致するなら問題なし。Eをそのまま返す。
-          -- 一致しないなら問題あり。Nothingを返す。
-          | isConcrete(x0) && isConcrete(x) -> if x0 == x then Just env else Nothing 
-          -- x0が具体型、xが型変数の場合
-          -- E(t:x0) を E(t:x0) + x:x0 とする。この処理で x が衝突する場合は再び衝突処理を行う。
-          | isConcrete(x0) && isVariable(x) -> unify x x0 env
-          -- x0が型変数、xが具体型の場合
-          -- E(t:x0) を E(t:x) + x0:x とする。必要なら衝突処理を行う。
-          | isVariable(x0) && isConcrete(x) -> unify x0 x (M.insert t x env)
-          -- x0が型変数、xが型変数の場合
-          -- E(t:x0) を E(t:x0) + x0:x とする。必要なら衝突処理を行う。
-          | isVariable(x0) && isVariable(x) -> unify x0 x env
-
-  
+  -- 型環境において、キーとなる型変数の値が型変数だった場合、値をキー自身で上書きする
+  cancelXs :: String -> DeepList Type -> M.Map String (DeepList Type) -> DeepList Type
+  cancelXs key value env | isConcrete value = value
+  cancelXs key value env | hasVariable value = Elem key

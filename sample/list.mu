@@ -41,13 +41,13 @@ fun foldr : [a] -> (a->b->b) -> a -> b = {
   [x;xs] f a -> f x (foldr xs f a)
 }
 
-fun sum : [a] -> a = es -> foldr es (x y -> x + y : a -> a) 0
-fun product : [a] -> a = es -> foldr es (x y -> x * y : a -> a) 1
+fun sum : [a] -> a = es -> foldr es (x y -> x + y : a -> a -> a) 0
+fun product : [a] -> a = es -> foldr es (x y -> x * y : a -> a -> a) 1
 
 [4,1,5,3,2].qsort.reverse.puts
 
-puts (foldr [1,2,3,4,5] (x y -> x + y : a -> a) 0)
-puts (foldr [1,2,3,4,5] (x y -> x * y : a -> a) 1)
+puts (foldr [1,2,3,4,5] (x y -> x + y : a -> a -> a) 0)
+puts (foldr [1,2,3,4,5] (x y -> x * y : a -> a -> a) 1)
 puts (sum [1,2,3,4,5])
 puts (product [1,2,3,4,5])
 
