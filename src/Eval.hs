@@ -85,7 +85,7 @@ module Eval where
                    in eval (Apply (Fun types params (snd3 pair) env) args) env
       Nothing   -> throwError "condition no match"
   eval expr@(TypeSig sig (Var name _)) env = do
-    fun' <- liftIO $ lookupFun name sig env False
+    fun' <- liftIO $ lookupFun name (dInit sig) env False
     case fun' of
       Just fun -> return fun
       Nothing -> do
@@ -103,7 +103,7 @@ module Eval where
     forM_ typeDef $ \(member, (Plain [typeList])) -> do
       eval (FunDef (Var member code) (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct" emptyCode) [Var "x" emptyCode, StrLit member])) env
     eval (FunDef (Var name code) types params (Apply (Var "makeStruct" emptyCode) (StrLit name : map StrLit params))) env    
-    where types = typeDefToTypes typeDef
+    where types = typeDefToTypes typeDef name
           params = map fst typeDef
   eval value@(StructValue structValue) env = return value
 

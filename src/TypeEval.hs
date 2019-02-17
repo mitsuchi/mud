@@ -67,6 +67,7 @@ module TypeEval where
   typeEval (BinOp Dot _ e1 var@(Var name code)) env = typeEval (Apply var [e1]) env
   typeEval (BinOp Dot _ e1 fun@(Fun types params expr outerEnv)) env = typeEval (Apply fun [e1]) env
   typeEval (BinOp Dot _ e1 (Apply expr args)) env = typeEval (Apply expr (e1 : args)) env  
+  typeEval (BinOp Dot _ e1 e2) env = typeEval (Apply e2 [e1]) env  
   typeEval (BinOp (OpLit lit) code e1 e2) env = 
     typeEval (Apply (Var lit code) [e1, e2]) env 
   typeEval (BinOp op code e1 e2) env = do
@@ -149,6 +150,12 @@ module TypeEval where
     if matchAll
       then return $ last types
       else throwError "type mismatch. condition no match"
+  typeEval (TypeDef (Var name code) typeDef) env = do
+    forM_ typeDef $ \(member, (Plain [typeList])) -> do
+      typeEval (FunDef (Var member code) (Plain [Elem name, typeList]) ["x"] (TypeLit typeList)) env
+    typeEval (FunDef (Var name code) types params (TypeLit (dLast types))) env    
+    where types = typeDefToTypes typeDef name
+          params = map fst typeDef
 
   -- body types typeEnv env
   -- 型環境 typeEnv と env のもとで body を評価して、その型が types とマッチするかどうか

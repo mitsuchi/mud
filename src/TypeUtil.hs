@@ -63,11 +63,11 @@ module TypeUtil where
       Just i  -> makeMap' es num table
 
 
-  -- [("r",Plain [Elem "Int"]),("i",Plain [Elem "Int"])]
+  -- [("r",Plain [Elem "Int"]),("i",Plain [Elem "Int"])] "Complex"
   -- を以下に変換する
-  -- Plain [Elem "Int", Elem "Int"]
-  typeDefToTypes :: [(String, DeepList String)] -> DeepList String
-  typeDefToTypes es = Plain (foldMap ((++) . (\(Plain x) -> x) . snd) es [])
+  -- Plain [Elem "Int", Elem "Int", Elem "Complex"]
+  typeDefToTypes :: [(String, DeepList String)] -> String -> DeepList String
+  typeDefToTypes es name = Plain ((foldMap ((++) . (\(Plain x) -> x) . snd) es []) ++ [Elem name])
 
   generalizeTypesWith :: String -> DeepList String -> DeepList String
   generalizeTypesWith str list = gnrlizeWith str list (makeMap (dFlatten list))
@@ -104,6 +104,7 @@ module TypeUtil where
     case unify a b env of
       Nothing -> Nothing
       Just env' -> unify (Plain as) (Plain bs) env'
+  unify (Elem "_") b env = Just M.empty
   unify _ _ _ = Nothing -- 上記以外の場合は失敗
 
   push :: String -> DeepList String -> M.Map String (DeepList String) -> Maybe (M.Map String (DeepList String))

@@ -170,14 +170,14 @@ abs (-3)  #=> 3
 abs 3     #=> 3
 
 # 条件つきパターンマッチを使った fizzbuzz の例
+fun divide? : Int -> Int -> Bool = {
+  a b -> (b/a)*a == b
+}
 fun fizzbuzz : Int -> String = {
   a |15.divide? a| -> "fizzbuzz"
   a | 5.divide? a| -> "buzz"
   a | 3.divide? a| -> "fizz"
   a                -> a.to_s
-}
-fun divide? : Int -> Int -> Bool = {
-  a b -> (b/a)*a == b
 }
 
 # 匿名関数の型を省略する。
@@ -194,5 +194,5 @@ triple "a" #=> "aaa"
 double' = x -> x + x
 double' 10    #=> 20
 
-double' = x -> x + " " + x : String -> String
-double' "hoge"   #=> "hoge hoge"
+double'' = x -> x + " " + x : String -> String
+double'' "hoge"   #=> "hoge hoge"
