@@ -80,8 +80,8 @@ main = do
       "3" ~=? pe "type Complex = { r:Int, i:Int }; fun + : Complex -> Int -> Complex = x y -> Complex (x.r+y) (x.i); a = Complex 1 2; (a + 2).r",
       "3" ~=? pe "type Complex = { r:Int, i:Int }; fun + : Int -> Complex -> Complex = y x -> Complex (x.r+y) (x.i); a = Complex 1 2; (2 + a).r",
       "2" ~=? pe "type Complex = { r:Int, i:Int }; fun - : Complex -> Complex -> Complex = x y -> Complex (x.r-y.r) (x.i-y.i); a = Complex 1 2; b = Complex 3 4; (b - a).r",
-      "3" ~=? pe "fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c); fun inc : Int -> Int = x -> x + 1; fun double : Int -> Int = x -> x * 2; (inc * double) 1",
-      "1:function '** : Int -> Int -> ?' not found" ~=? pe "1**2",
+      "21" ~=? pe "fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c); fun inc : Int -> Int = x -> x + 1; fun double : Int -> Int = x -> x * 2; (inc * double) 10",
+      "1:type mismatch. function '** : Int -> Int -> ?' not found" ~=? pe "1**2",
       "10" ~=? pe "10.to_s",
       "12.3" ~=? pe "(12.3).to_s",
       "False" ~=? pe "False.to_s",
@@ -104,9 +104,9 @@ main = do
       "3" ~=? pe "(x -> x + 2) 1",
       "3" ~=? pe "1.(x -> x + 2)",
       "[4,3,2,1]" ~=? pe "fun reverse : [a] -> [a] = { [] -> []; [e;es] -> (reverse es) + [e] }; reverse [1,2,3,4]",
-      "1:function 'id : Int -> ?' already exists" ~=? pe "id = x -> x : Int -> Int; id = x -> x : Int -> Int",
+      "1:variable 'id' already exists" ~=? pe "id = x -> x : Int -> Int; id = x -> x : Int -> Int",
       "two" ~=? pe "fun inc : String -> String = { 'one' -> 'two' }; inc 'one'"
     ]
 
 pe :: String -> String
-pe program = unsafePerformIO (Lib.parseEval program)
+pe program = unsafePerformIO (Lib.parseTypeCheckEval program)

@@ -82,7 +82,7 @@ module TypeEval where
       Just (Fun types _ _ _) -> return types
       Just (Call name types) -> return types
       Just (TypeLit types) -> return types
-      Nothing -> throwError ((show $ lineOfCode code) ++ ":hogehoge type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found.")
+      Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found")
       otherwise -> throwError ("function not found. fun " ++ (show fun'))
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Plain args')

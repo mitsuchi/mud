@@ -64,6 +64,7 @@ module Eval where
     return $ Fun types params body env
   eval (Apply (Call name _) args) env = call name args env emptyCode
   eval (Apply (Fun types params body outerEnv) args) env = do
+    --trace ("apply: body=" ++ (show body)) $ return ()
     varMap <- liftIO $ readIORef outerEnv
     env' <- liftIO $ newEnv params args varMap
     eval body env'
@@ -74,6 +75,7 @@ module Eval where
       Just fun -> eval (Apply fun args') env
       Nothing -> call name args' env code
   eval (Apply expr args) env = do
+    --trace ("apply: last") $ return ()
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
     eval (Apply expr' args') env

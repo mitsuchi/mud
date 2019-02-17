@@ -116,7 +116,7 @@ module Primitive where
     insertCall "*" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
     insertCall "*" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
     insertCall "*" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
-    insertCall "*" (Plain [Elem "a", Elem "a", Elem "a"]) env        
+    --insertCall "*" (Plain [Elem "a", Elem "a", Elem "a"]) env        
     insertCall "/" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
     insertCall "/" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
     insertCall "/" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env

@@ -58,6 +58,21 @@ module Lib where
       Right val -> putStrLn (show val)
       Left error -> putStrLn error
 
+  runTypeCheckAndEval :: Expr -> IO String
+  runTypeCheckAndEval expr = do
+    env <- newIORef Map.empty
+    insertPrimitives env
+    typeSig <- runExceptT (typeEval expr env)
+    case typeSig of
+      Right val -> do
+        env' <- newIORef Map.empty
+        insertPrimitives env'
+        expr' <- runExceptT (eval expr env')
+        case expr' of 
+          Right val -> return (show val)
+          Left  error -> return error
+      Left error -> return error    
+
   runEvalOnly :: Expr -> IO ()
   runEvalOnly expr = do
     env <- newIORef Map.empty
@@ -127,3 +142,13 @@ module Lib where
   parseEval program = do
     env <- newIORef Map.empty
     evalString env program
+
+  parseTypeCheckEval :: String -> IO String
+  parseTypeCheckEval program = do
+    env <- newIORef Map.empty
+    evalTypeCheckString env program    
+
+  evalTypeCheckString :: Env -> String -> IO String
+  evalTypeCheckString env program = case pa program of
+    Right expr -> runTypeCheckAndEval expr
+    Left bundle -> return (errorBundlePretty bundle)    

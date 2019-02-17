@@ -61,11 +61,13 @@ module Env where
   -- 
   lookupFun :: (Show a) => String -> DeepList String -> GeneralEnv a -> Bool -> IO (Maybe a)
   lookupFun name types env strict = do
+    --trace ("lookupFun: name=" ++ name) $ return True
     env' <- readIORef env
     return $ do
       funs <- Map.lookup name env'
       if hasVariable types
         then lastMatch (generalizeTypesWith "x" types) funs strict
+        --else trace ("firstMatch: type: " ++ (show (generalizeTypesWith "x" types)) ++ ", funs: " ++ (show funs) ++ ", strict: " ++ (show strict)) $ firstMatch (generalizeTypesWith "x" types) funs strict
         else firstMatch (generalizeTypesWith "x" types) funs strict
       -- if hasVariable types
       --   then let fun' = firstMatch (generalizeTypesWith "x" types) funs strict True
