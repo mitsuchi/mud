@@ -25,6 +25,7 @@ module TypeEval where
   typeEval (Var "True" _) env = return $ Elem "Bool"
   typeEval (Var "False" _) env = return $ Elem "Bool"
   typeEval (TypeSig sig _) env = return $ sig
+  typeEval (TypeLit types) env = return types
   typeEval (Fun sig _ _ _) env = return $ sig
   typeEval (ListLit [] _) env = return $ Plain [Elem "List", Elem "t0"]
   -- リストの型は、要素すべてと同じ型。ひとつでも違う型があるとエラー。
@@ -41,7 +42,7 @@ module TypeEval where
   typeEval (Seq (e:es)) env = do
     typeEval e env
     typeEval (Seq es) env
-  typeEval (Neg expr) env = typeEval (BinOp (OpLit "-") emptyCode (IntLit 0) expr) env
+  typeEval (Neg expr) env = typeEval expr env
   typeEval (Assign (Var name code) fun@(Fun types params expr outerEnv)) env = do
     res <- liftIO $ insertFun name types fun env
     case res of
@@ -75,7 +76,7 @@ module TypeEval where
   typeEval (Apply (Var name code) args) env = do
     args' <- mapM (\arg -> typeEval arg env) args
     fun' <- liftIO $ lookupFun name (Plain args') env False
-    -- trace ("fun " ++ (show fun')) $ return ()
+    --trace ("args': " ++ (show args') ++ ", fun " ++ (show fun')) $ return ()
     types <- case fun' of
       Just (Fun types _ _ _) -> return types
       Just (Call name types) -> return types
@@ -113,12 +114,13 @@ module TypeEval where
     if cond' == Elem "Bool"
       then if then' == else'
         then return then'
-        else throwError $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
+        --else throwError $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
+        else error $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
       else throwError $ "type mismatch. condition-part has a type '" ++ (show cond') ++ "'. must be 'Bool'."
   typeEval (FunDef nameExpr@(Var name code) types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
-    env' <- liftIO $ newEnv params (map TypeLit (dArgs types)) varMap    
+    env' <- liftIO $ newEnv params (map TypeLit (dArgs (generalizeTypeSig types))) varMap    
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
@@ -129,11 +131,13 @@ module TypeEval where
   typeEval (FunDefAnon types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
-    env' <- liftIO $ newEnv params (map TypeLit (dArgs types)) varMap
+    env' <- liftIO $ newEnv params (map TypeLit (dArgs (generalizeTypeSig types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
-    case findTypeEnv types (dAppend (dInit types) (Plain [body'])) M.empty False of
-      Just env0 -> return $ types
+    --case findTypeEnv types (dAppend (dInit types) (Plain [body'])) M.empty False of
+    case unify types (dAppend (dInit types) (Plain [body'])) M.empty of      
+      --Just env0 -> return $ types
+      Just env0 -> return $ generalizeTypeSig types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"    
   typeEval (Case es matchPairs (Plain types')) env = do
     (Plain types) <- return $ generalizeTypeSig (Plain types')
@@ -240,4 +244,13 @@ module TypeEval where
   -- 型環境において、キーとなる型変数の値が型変数だった場合、値をキー自身で上書きする
   cancelXs :: String -> DeepList Type -> M.Map String (DeepList Type) -> DeepList Type
   cancelXs key value env | isConcrete value = value
-  cancelXs key value env | hasVariable value = Elem key
+  --cancelXs key value env | hasVariable value = Elem key
+  cancelXs key value env | hasVariable value = renameType value
+
+  -- [x0] -> x1 を [t0] -> t1 に変更する
+  renameType :: DeepList Type -> DeepList Type
+  renameType (Elem ('x':xs)) = Elem ('t':xs)
+  renameType (Elem xs) = Elem xs
+  renameType (Plain es) = Plain (map renameType es)
+
+

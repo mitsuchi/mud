@@ -65,22 +65,24 @@ module Env where
     return $ do
       funs <- Map.lookup name env'
       if hasVariable types
-        then let fun' = firstMatch (generalizeTypesWith "x" types) funs strict True
-          in case fun' of
-            Nothing -> firstMatch (generalizeTypesWith "x" types) funs strict False
-            Just fun -> fun'
-        else firstMatch (generalizeTypesWith "x" types) funs strict False
+        then lastMatch (generalizeTypesWith "x" types) funs strict
+        else firstMatch (generalizeTypesWith "x" types) funs strict
+      -- if hasVariable types
+      --   then let fun' = firstMatch (generalizeTypesWith "x" types) funs strict True
+      --     in case fun' of
+      --       Nothing -> firstMatch (generalizeTypesWith "x" types) funs strict False
+      --       Just fun -> fun'
+      --   else firstMatch (generalizeTypesWith "x" types) funs strict False
 
-  firstMatch :: (Show a) => DeepList String -> [(DeepList String, a)] -> Bool -> Bool -> Maybe a
-  firstMatch types [] strict ignoreConcrete = Nothing
-  firstMatch types ((types', expr):es) strict ignoreConcrete = 
+  firstMatch :: (Show a) => DeepList String -> [(DeepList String, a)] -> Bool -> Maybe a
+  firstMatch types [] strict = Nothing
+  firstMatch types ((types', expr):es) strict = 
     case (if strict then findTypeEnv types' types Map.empty True else unify (dInit types') types Map.empty) of
-    Nothing -> firstMatch types es strict ignoreConcrete
-    Just env -> if ignoreConcrete 
-      then if isConcrete types'
-        then firstMatch types es strict ignoreConcrete
-        else Just expr
-      else Just expr
+    Nothing -> firstMatch types es strict
+    Just env -> Just expr
+
+  lastMatch :: (Show a) => DeepList String -> [(DeepList String, a)] -> Bool -> Maybe a
+  lastMatch types funs strict = firstMatch types (reverse funs) strict
 
   -- 変数を環境に登録する
   -- 同名の変数がない場合のみ登録できる

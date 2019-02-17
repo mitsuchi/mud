@@ -99,22 +99,24 @@ module Primitive where
     insertCall "to_s" (Plain [Elem "Bool", Elem "String"]) env
     insertCall "+" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
     insertCall "+" (Plain [Elem "String", Elem "String", Elem "String"]) env
-    insertCall "+" (Plain [Elem "Double", Elem "Double", Elem "Souble"]) env
+    insertCall "+" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
     insertCall "+" (Plain [Elem "String", Elem "String", Elem "String"]) env
-    insertCall "+" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]]) env
     insertCall "+" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
     insertCall "+" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
     insertCall "+" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "+" (Plain [Elem "a", Elem "a", Elem "a"]) env            
     insertCall "-" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
     insertCall "-" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
     insertCall "-" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
     insertCall "-" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "-" (Plain [Elem "a", Elem "a", Elem "a"]) env        
     insertCall "*" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
     insertCall "*" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
     insertCall "*" (Plain [Elem "String", Elem "Int", Elem "String"]) env
     insertCall "*" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
     insertCall "*" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
     insertCall "*" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "*" (Plain [Elem "a", Elem "a", Elem "a"]) env        
     insertCall "/" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
     insertCall "/" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
     insertCall "/" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
