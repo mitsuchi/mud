@@ -19,14 +19,6 @@ module DeepList where
   dShow (Elem x) = show x
   dShow (Plain xs) = "[" ++ intercalate "," (map dShow xs) ++ "]"
 
-  -- dArrow :: (Show a) => DeepList a -> String
-  -- dArrow (Elem x) = show x
-  -- dArrow (Plain xs) = intercalate "->" (map dArrow xs)
-
-  -- listify :: (Show a) => DeepList a -> [String]
-  -- listify (Elem x) = [show x]
-  -- listify (Plain xs) = map dArrow xs
-
   argSig :: DeepList String -> String
   argSig (Elem x) = x
   argSig (Plain xs) = (intercalate " -> " (map dArrow (init xs))) ++ " -> ?"
