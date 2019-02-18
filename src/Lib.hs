@@ -162,15 +162,14 @@ module Lib where
 
   -- プログラムの文字列をパースして評価して結果を表示する
   ev :: String -> IO ()
-  ev program = case pa program of
-    Right expr -> do
-      env <- newIORef Map.empty
-      insertPrimitives env
-      expr' <- runExceptT (eval expr env)
-      case expr' of 
-        Right val -> putStrLn (show val)
-        Left error -> putStrLn error
-    Left bundle -> putStr (errorBundlePretty bundle)    
+  ev program = do
+    output <- runExceptT $ do
+      expr <- parseString program
+      output <- evalWithEmptyEnv expr
+      return output
+    case output of
+      Left error -> putStrLn error
+      Right expr -> putStrLn (show expr)  
 
   -- ファイルからプログラムを読んでパースして評価して結果を表示する
   evf :: String -> IO ()
