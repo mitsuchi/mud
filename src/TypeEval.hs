@@ -5,7 +5,7 @@ module TypeEval where
   import Data.Char
   import Data.IORef
   import Data.List (find, intercalate)
-  import qualified Data.Map as M hiding (foldr, take)
+  import qualified Data.Map as Map hiding (foldr, take)
   import Debug.Trace
 
   import Expr
@@ -32,7 +32,7 @@ module TypeEval where
     if allTheSame es'
       then return $ Elems [Elem "List", head es']
       else throwError $ (show $ lineOfCode c) ++ ":type mismatch. list can't contain different type of elements."
-  typeEval (StructValue s) env = case M.lookup "type" s of
+  typeEval (StructValue s) env = case Map.lookup "type" s of
     Just (StrLit str) -> return $ Elem str
     Nothing           -> error "type not defined in struct value"  
   typeEval (Seq (e:[])) env = typeEval e env
@@ -84,25 +84,25 @@ module TypeEval where
       otherwise -> throwError ("function not found. fun " ++ (show fun'))
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
-    case unify (dInit ts) xs M.empty of
+    case unify (dInit ts) xs Map.empty of
       Nothing -> throwError ((show $ lineOfCode code) ++ "ts:" ++ (show ts) ++ ",xs:" ++ (show xs) ++ ":fugafuga type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found.")
-      --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (dLast ts) (M.map (\e -> typeInst e typeEnv) typeEnv)
-      Just typeEnv -> let env1 = M.map (\e -> typeInst e typeEnv) typeEnv
-        in return $ typeInst (dLast ts) $ M.mapWithKey (\k e -> cancelXs k e env1) env1
-    --typeEnv <- return $ findTypeEnv (dInit types) (Elems args') M.empty False      
+      --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (dLast ts) (Map.map (\e -> typeInst e typeEnv) typeEnv)
+      Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
+        in return $ typeInst (dLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
+    --typeEnv <- return $ findTypeEnv (dInit types) (Elems args') Map.empty False      
     -- case typeEnv of
     --   Just tenv -> return $ typeInst (dLast types) tenv
     --   Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. can not apply function")
   typeEval (Apply (TypeLit types) args) env = do
     args' <- mapM (\arg -> typeEval arg env) args
-    --case findTypeEnv types (Elems args') M.empty False of
+    --case findTypeEnv types (Elems args') Map.empty False of
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
-    case unify (dInit ts) xs M.empty of
+    case unify (dInit ts) xs Map.empty of
       Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map dArrow args')
       --Just typeEnv -> return $ dLast types
-      Just typeEnv -> let env1 = M.map (\e -> typeInst e typeEnv) typeEnv
-        in return $ typeInst (dLast ts) $ M.mapWithKey (\k e -> cancelXs k e env1) env1
+      Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
+        in return $ typeInst (dLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
   typeEval (Apply expr args) env = do
     expr' <- typeEval expr env
     typeEval (Apply (TypeLit expr') args) env        
@@ -123,8 +123,8 @@ module TypeEval where
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
-    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) M.empty False of
-    case unify types (dAppend (dInit types) (Elems [body'])) M.empty of
+    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) Map.empty False of
+    case unify types (dAppend (dInit types) (Elems [body'])) Map.empty of
       Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env 
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"
   typeEval (FunDefAnon types params body) env = do
@@ -133,15 +133,15 @@ module TypeEval where
     env' <- liftIO $ newEnv params (map TypeLit (dArgs (generalizeTypeSig types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
-    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) M.empty False of
-    case unify types (dAppend (dInit types) (Elems [body'])) M.empty of      
+    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) Map.empty False of
+    case unify types (dAppend (dInit types) (Elems [body'])) Map.empty of      
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypeSig types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"    
   typeEval (Case es matchPairs (Elems types')) env = do
     (Elems types) <- return $ generalizeTypeSig (Elems types')
     matchAll <- liftIO $ andM $ map ( \(args, body, guard) -> do
-      (bool, typeEnv) <- matchCondType (init types) args guard M.empty env
+      (bool, typeEnv) <- matchCondType (init types) args guard Map.empty env
       bool' <- if bool then matchResultType body (last types) typeEnv env else return False
       return bool'
       ) matchPairs
@@ -157,7 +157,7 @@ module TypeEval where
 
   typeEvalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
   typeEvalWithPrimitiveEnv expr = do
-    env <- liftIO $ newIORef M.empty
+    env <- liftIO $ newIORef Map.empty
     liftIO $ insertPrimitives env
     expr' <- typeEval expr env
     return $ TypeLit expr'
@@ -165,18 +165,18 @@ module TypeEval where
   typeEvalWithEnv :: Expr -> Env -> IOThrowsError Expr
   typeEvalWithEnv expr env = do
     varMap <- liftIO $ readIORef env
-    env' <- liftIO $ newIORef (M.map ( \xs -> Prelude.map (\(types, expr) -> (types, (TypeLit . typeOf') expr)) xs ) varMap)
+    env' <- liftIO $ newIORef (Map.map ( \xs -> Prelude.map (\(types, expr) -> (types, (TypeLit . typeOf') expr)) xs ) varMap)
     liftIO $ insertPrimitives env'
     expr' <- typeEval expr env'
     return $ TypeLit expr'   
 
   -- body types typeEnv env
   -- 型環境 typeEnv と env のもとで body を評価して、その型が types とマッチするかどうか
-  matchResultType :: Expr -> RecList Type -> M.Map String (RecList Type) -> Env -> IO Bool
+  matchResultType :: Expr -> RecList Type -> Map.Map String (RecList Type) -> Env -> IO Bool
   matchResultType body types typeEnv env = do
     varMap' <- liftIO $ readIORef env
     env' <- newIORef varMap'
-    mapM_ (\(name, types) -> insertAny (name, TypeLit types) env') (M.toList typeEnv)
+    mapM_ (\(name, types) -> insertAny (name, TypeLit types) env') (Map.toList typeEnv)
     bodyType <- runExceptT $ typeEval body env'
     --trace ("bodyType: " ++ (show bodyType) ++ ", types: " ++ (show types)) $ return True
     case bodyType of
@@ -193,7 +193,7 @@ module TypeEval where
     then allTheSame es
     else False
 
-  newEnv :: [String] -> [Expr] -> (M.Map String [(RecList String, Expr)]) -> IO Env
+  newEnv :: [String] -> [Expr] -> (Map.Map String [(RecList String, Expr)]) -> IO Env
   newEnv params args outerEnv = do
     env <- newIORef outerEnv
     mapM_ (\p -> insertAny p env) (zip params args)
@@ -208,40 +208,40 @@ module TypeEval where
     otherwise         -> insertVarForce name expr env
 
   -- マッチ式の引数の列が、与えられた型の列(マッチ式を含む関数の型)とマッチするか？
-  matchCondType :: [RecList Type] -> [Expr] -> Maybe Expr -> M.Map String (RecList Type) -> Env -> IO (Bool, M.Map String (RecList Type))
+  matchCondType :: [RecList Type] -> [Expr] -> Maybe Expr -> Map.Map String (RecList Type) -> Env -> IO (Bool, Map.Map String (RecList Type))
   matchCondType (e1:e1s) ((Var v _):e2s) guard varMap env = 
     -- マッチ式に変数がくる場合：変数に対する型の既存の割り当てと矛盾しなければマッチ      
-    case M.lookup v varMap of
-      Nothing   -> matchCondType e1s e2s guard (M.insert v e1 varMap) env
+    case Map.lookup v varMap of
+      Nothing   -> matchCondType e1s e2s guard (Map.insert v e1 varMap) env
       Just types -> if types == e1
         then matchCondType e1s e2s guard varMap env
-        else return (False, M.empty)
+        else return (False, Map.empty)
   matchCondType (listType@(Elems [Elem "List", Elem a]):e1s) ((ListLit [Var e _, Var es _] _):e2s) guard varMap env = do
     -- マッチ式にリスト([e;es])がくる場合
     -- 対応する引数の型もリストであることが必要
     -- それを [a] とすると、e:a, es:[a] を型環境に割り当てる
-    vmap1 <- return $ M.insert e (Elem a) varMap
-    vmap2 <- return $ M.insert es listType vmap1
+    vmap1 <- return $ Map.insert e (Elem a) varMap
+    vmap2 <- return $ Map.insert es listType vmap1
     matchCondType e1s e2s guard vmap2 env
   matchCondType (e1:e1s) (e2:e2s) guard varMap env =
     -- 一般の場合：型としてマッチすればOK (Int vs Int, a vs String など)    
     case findTypeEnv e1 (typeOf' e2) varMap False of
       Just varMap' -> matchCondType e1s e2s guard varMap' env
-      Nothing -> return (False, M.empty)
+      Nothing -> return (False, Map.empty)
   matchCondType [] [] guard varMap env = case guard of
     Nothing -> return (True, varMap)
     Just guard' -> do
       -- もしガード節があれば、現状の型環境の下でガード節の型がBoolになることが必要
       varMap' <- liftIO $ readIORef env
       env' <- newIORef varMap'
-      mapM_ (\(name, types) -> insertAny (name, TypeLit types) env') (M.toList varMap)
+      mapM_ (\(name, types) -> insertAny (name, TypeLit types) env') (Map.toList varMap)
       guardBodyType <- runExceptT (typeEval guard' env')
       case guardBodyType of
         Right val -> if val == (Elem "Bool")
           then return (True, varMap)
-          else return (False, M.empty)
-        Left error -> trace error $ return (False, M.empty)
-  matchCondType e1 e2 _ varMap env = trace ("matchCondType: " ++ show (e1,e2)) $ return (False, M.empty)
+          else return (False, Map.empty)
+        Left error -> trace error $ return (False, Map.empty)
+  matchCondType e1 e2 _ varMap env = trace ("matchCondType: " ++ show (e1,e2)) $ return (False, Map.empty)
 
   allM :: Monad m => (a -> m Bool) -> [a] -> m Bool
   allM p [] = return True
@@ -254,15 +254,15 @@ module TypeEval where
   ifM b t f = do b <- b; if b then t else f
 
   -- 型もしくは型変数を、型環境を元にインスタンス化する
-  typeInst :: RecList Type -> M.Map String (RecList Type) -> RecList Type
+  typeInst :: RecList Type -> Map.Map String (RecList Type) -> RecList Type
   typeInst (Elem a) env | isUpper(a!!0) = Elem a
-  typeInst (Elem a) env | isLower(a!!0) = case M.lookup a env of
+  typeInst (Elem a) env | isLower(a!!0) = case Map.lookup a env of
     Just types -> types
     Nothing -> Elem a
   typeInst (Elems es) env = Elems (map (\e -> typeInst e env) es)
 
   -- 型環境において、キーとなる型変数の値が型変数だった場合、値をキー自身で上書きする
-  cancelXs :: String -> RecList Type -> M.Map String (RecList Type) -> RecList Type
+  cancelXs :: String -> RecList Type -> Map.Map String (RecList Type) -> RecList Type
   cancelXs key value env | isConcrete value = value
   --cancelXs key value env | hasVariable value = Elem key
   cancelXs key value env | hasVariable value = renameType value
