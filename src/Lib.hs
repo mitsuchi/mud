@@ -18,93 +18,7 @@ module Lib where
 
   -- プログラムの文字列をパースしてエラーか式を返す
   parseProgram :: String -> Either (ParseErrorBundle String Void) Expr
-  parseProgram program = parse topLevel "<stdin>" program
-    
-  -- プログラムの文字列をパースしてエラーか式を返す
-  pa :: String -> Either (ParseErrorBundle String Void) Expr
-  pa program = parse topLevel "<stdin>" program
-  
-  -- プログラムの文字列をパースして型評価する
-  te :: String -> IO ()
-  te program = case pa program of
-    Right expr -> runTypeEval expr
-    Left bundle -> putStr (errorBundlePretty bundle)
-
-  -- ファイルからプログラムを読んでパースして、型評価する    
-  tef :: String -> IO ()
-  tef file = do 
-    program <- readFile file
-    te program
-
-  -- プログラムの文字列をパースして評価して結果を表示する
-  ev :: String -> IO ()
-  ev program = case pa program of
-    Right expr -> runEval expr
-    Left bundle -> putStr (errorBundlePretty bundle)
-
-  -- プログラムの文字列をパースして評価して結果を表示しない
-  evalOnly :: String -> IO ()
-  evalOnly program = case pa program of
-    Right expr -> runEvalOnly expr
-    Left bundle -> putStr (errorBundlePretty bundle)
-
-  -- ファイルからプログラムを読んでパースして評価して結果を表示する
-  evf :: String -> IO ()
-  evf file = do 
-    program <- readFile file
-    ev program
-  
-  -- ファイルからプログラムを読んでパースする
-  paf :: String -> IO ()
-  paf file = do 
-    program <- readFile file
-    print $ pa program
-  
-  -- 式を評価して結果を表示する
-  runEval :: Expr -> IO ()
-  runEval expr = do
-    env <- newIORef Map.empty
-    insertPrimitives env
-    expr' <- runExceptT (eval expr env)
-    case expr' of 
-      Right val -> putStrLn (show val)
-      Left error -> putStrLn error
-
-  -- 式を型評価してOKなら評価して結果をIO文字列で返す
-  runTypeCheckAndEval :: Expr -> IO String
-  runTypeCheckAndEval expr = do
-    env <- newIORef Map.empty
-    insertPrimitives env
-    typeSig <- runExceptT (typeEval expr env)
-    case typeSig of
-      Right val -> do
-        env' <- newIORef Map.empty
-        insertPrimitives env'
-        expr' <- runExceptT (eval expr env')
-        case expr' of 
-          Right val -> return (show val)
-          Left  error -> return error
-      Left error -> return error    
-
-  -- 式を評価して結果を表ししない
-  runEvalOnly :: Expr -> IO ()
-  runEvalOnly expr = do
-    env <- newIORef Map.empty
-    insertPrimitives env
-    expr' <- runExceptT (eval expr env)
-    case expr' of 
-      Right val -> putStr ""
-      Left error -> putStrLn error
-
-  -- 式を型評価して結果を表示する
-  runTypeEval :: Expr -> IO ()
-  runTypeEval expr = do
-    env <- newIORef Map.empty
-    insertPrimitives env
-    typeSig <- runExceptT (typeEval expr env)
-    case typeSig of
-      Right val -> putStrLn (show typeSig)
-      Left error -> putStrLn error
+  parseProgram program = parse topLevel "<stdin>" program  
 
   -- REPLを実行する
   repl :: IO ()
@@ -127,20 +41,6 @@ module Lib where
             case expr' of 
               Left  error -> putStrLn error                
               Right val -> putStrLn (show val)
-
-  -- 与えられた環境で式を評価して結果を表示する
-  evalAndPrint :: Env -> String -> IO ()
-  evalAndPrint env expr =  evalString env expr >>= putStrLn
-
-  -- プログラム文字列をパースし、与えられた環境で式を評価して結果をIO文字列か返す
-  evalString :: Env -> String -> IO String
-  evalString env program = case pa program of
-    Right expr -> do 
-      expr' <- runExceptT (eval expr env)
-      case expr' of 
-        Right val -> return (show val)
-        Left error -> return error
-    Left bundle -> return (errorBundlePretty bundle)
 
   until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
   until_ pred prompt action = do 
@@ -175,12 +75,6 @@ module Lib where
       Left bundle -> putStrLn (errorBundlePretty bundle)        
       Right expr -> putStrLn (show expr)
 
-  -- プログラム文字列をパースして評価して結果をIO文字列で返す
-  parseEval :: String -> IO String
-  parseEval program = do
-    env <- newIORef Map.empty
-    evalString env program
-
   -- プログラム文字列をパースして型評価して結果をIO文字列で返す  
   parseTypeCheckEval :: String -> IO String
   parseTypeCheckEval program = 
@@ -199,12 +93,6 @@ module Lib where
               case expr' of 
                 Left  error -> return error                
                 Right val -> return (show val)
-
-  -- プログラム文字列をパースして、与えられた環境で型評価して結果をIO文字列で返す      
-  evalTypeCheckString :: Env -> String -> IO String
-  evalTypeCheckString env program = case pa program of
-    Right expr -> runTypeCheckAndEval expr
-    Left bundle -> return (errorBundlePretty bundle)    
 
   execRun :: [String] -> IO ()
   execRun ["run", filename] = do
@@ -233,12 +121,7 @@ module Lib where
     ++ "\n"
     ++ "Examples:\n"
     ++ "\n"
-    ++ "         mud run example.mu\n"
-
-  tryEither :: (Either a b) -> (b -> (Either a b)) -> Either a b
-  tryEither x f = case x of
-    Left l -> Left l
-    Right r -> f r    
+    ++ "         mud run example.mu\n" 
 
   execEval :: [String] -> IO ()
   execEval ["eval", program] = 
@@ -266,3 +149,51 @@ module Lib where
     ++ "Examples:\n"
     ++ "\n"
     ++ "         mud eval \"a=1;b=2;a+b\"\n"
+
+  -- 以下は開発用のショートカット
+
+  -- プログラムの文字列をパースしてエラーか式を返す
+  pa :: String -> Either (ParseErrorBundle String Void) Expr
+  pa program = parse topLevel "<stdin>" program
+  
+  -- プログラムの文字列をパースして型評価する
+  te :: String -> IO ()
+  te program = case pa program of
+    Right expr -> do
+      env <- newIORef Map.empty
+      insertPrimitives env
+      typeSig <- runExceptT (typeEval expr env)
+      case typeSig of
+        Right val -> putStrLn (show typeSig)
+        Left error -> putStrLn error
+    Left bundle -> putStr (errorBundlePretty bundle)
+
+  -- ファイルからプログラムを読んでパースして、型評価する    
+  tef :: String -> IO ()
+  tef file = do 
+    program <- readFile file
+    te program
+
+  -- プログラムの文字列をパースして評価して結果を表示する
+  ev :: String -> IO ()
+  ev program = case pa program of
+    Right expr -> do
+      env <- newIORef Map.empty
+      insertPrimitives env
+      expr' <- runExceptT (eval expr env)
+      case expr' of 
+        Right val -> putStrLn (show val)
+        Left error -> putStrLn error
+    Left bundle -> putStr (errorBundlePretty bundle)    
+
+  -- ファイルからプログラムを読んでパースして評価して結果を表示する
+  evf :: String -> IO ()
+  evf file = do 
+    program <- readFile file
+    ev program
+  
+  -- ファイルからプログラムを読んでパースする
+  paf :: String -> IO ()
+  paf file = do 
+    program <- readFile file
+    print $ pa program    
