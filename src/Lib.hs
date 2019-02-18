@@ -33,20 +33,13 @@ module Lib where
   -- 与えられた環境とプログラム文字列をもとに、型評価して評価して結果を表示する
   typeCheckAndEvalAndPrint :: Env -> String -> IO ()
   typeCheckAndEvalAndPrint env program = do
-    case parseProgram program of
-      Left bundle -> putStrLn (errorBundlePretty bundle)        
-      Right expr -> do
-        varMap <- readIORef env
-        env' <- newIORef (Map.map ( \xs -> Prelude.map (\(types, expr) -> (types, (TypeLit . typeOf') expr)) xs ) varMap)
-        insertPrimitives env'
-        typeSig <- runExceptT (typeEval expr env')
-        case typeSig of
-          Left error -> putStrLn error
-          Right val -> do
-            expr' <- runExceptT (eval expr env)
-            case expr' of 
-              Left  error -> putStrLn error                
-              Right val -> putStrLn (show val)
+    output <- runExceptT $ do
+      expr <- parseString program
+      typeEvalWithEnv expr env
+      eval expr env
+    case output of
+      Left error -> putStrLn error
+      Right expr -> putStrLn $ show expr
 
   -- 条件が成り立つまでモナドアクションを繰り返す
   until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
@@ -163,10 +156,3 @@ module Lib where
   paf file = do 
     program <- readFile file
     print $ pa program    
-
-  -- 空の環境で式を評価する
-  evalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
-  evalWithPrimitiveEnv expr = do
-    env <- liftIO $ newIORef Map.empty
-    liftIO $ insertPrimitives env
-    eval expr env

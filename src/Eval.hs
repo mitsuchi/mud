@@ -107,6 +107,13 @@ module Eval where
           params = map fst typeDef
   eval value@(StructValue structValue) env = return value
 
+  -- 空の環境で式を評価する
+  evalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
+  evalWithPrimitiveEnv expr = do
+    env <- liftIO $ newIORef Map.empty
+    liftIO $ insertPrimitives env
+    eval expr env
+      
   newEnv :: [String] -> [Expr] -> (Map String [(DeepList String, Expr)]) -> IO Env
   newEnv params args outerEnv = do
     env <- newIORef outerEnv

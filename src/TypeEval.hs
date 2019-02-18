@@ -13,14 +13,7 @@ module TypeEval where
   import DeepList
   import Primitive
   import Tuple
-  import TypeUtil
-
-  typeEvalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
-  typeEvalWithPrimitiveEnv expr = do
-    env <- liftIO $ newIORef M.empty
-    liftIO $ insertPrimitives env
-    expr' <- typeEval expr env
-    return $ TypeLit expr'
+  import TypeUtil 
 
   typeEval :: Expr -> Env -> IOThrowsError (DeepList Type)
   typeEval (IntLit i) env = return $ Elem "Int"
@@ -161,6 +154,21 @@ module TypeEval where
     typeEval (FunDef (Var name code) types params (TypeLit (dLast types))) env    
     where types = typeDefToTypes typeDef name
           params = map fst typeDef
+
+  typeEvalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
+  typeEvalWithPrimitiveEnv expr = do
+    env <- liftIO $ newIORef M.empty
+    liftIO $ insertPrimitives env
+    expr' <- typeEval expr env
+    return $ TypeLit expr'
+
+  typeEvalWithEnv :: Expr -> Env -> IOThrowsError Expr
+  typeEvalWithEnv expr env = do
+    varMap <- liftIO $ readIORef env
+    env' <- liftIO $ newIORef (M.map ( \xs -> Prelude.map (\(types, expr) -> (types, (TypeLit . typeOf') expr)) xs ) varMap)
+    liftIO $ insertPrimitives env'
+    expr' <- typeEval expr env'
+    return $ TypeLit expr'   
 
   -- body types typeEnv env
   -- 型環境 typeEnv と env のもとで body を評価して、その型が types とマッチするかどうか
