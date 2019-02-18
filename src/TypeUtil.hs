@@ -1,8 +1,11 @@
 module TypeUtil where
 
+  import Control.Monad.Except
   import Data.Char
   import qualified Data.Map as M
   import DeepList
+
+  type IOThrowsError = ExceptT String IO
 
   findTypeEnv :: DeepList String -> DeepList String -> M.Map String (DeepList String) -> Bool -> Maybe (M.Map String (DeepList String))
   --findTypeEnv (Elem a) (Elem b) env strict | (isUpper (a!!0) && isUpper (b!!0)) = Just env

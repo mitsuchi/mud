@@ -20,6 +20,11 @@ module Lib where
   parseProgram :: String -> Either (ParseErrorBundle String Void) Expr
   parseProgram program = parse topLevel "<stdin>" program  
 
+  parseString :: String -> IOThrowsError Expr
+  parseString program = case parseProgram program of
+    Left bundle -> throwError $ errorBundlePretty bundle
+    Right expr -> return expr
+
   -- REPLを実行する
   repl :: IO ()
   repl = do
@@ -178,3 +183,10 @@ module Lib where
   paf file = do 
     program <- readFile file
     print $ pa program    
+
+  -- 空の環境で式を評価する
+  evalWithEmptyEnv :: Expr -> IOThrowsError Expr
+  evalWithEmptyEnv expr = do
+    env <- liftIO $ newIORef Map.empty
+    liftIO $ insertPrimitives env
+    eval expr env

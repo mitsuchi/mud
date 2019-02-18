@@ -15,8 +15,6 @@ module TypeEval where
   import Tuple
   import TypeUtil
 
-  type IOThrowsError = ExceptT String IO
-
   typeEval :: Expr -> Env -> IOThrowsError (DeepList Type)
   typeEval (IntLit i) env = return $ Elem "Int"
   typeEval (StrLit s) env = return $ Elem "String"

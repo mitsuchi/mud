@@ -14,8 +14,6 @@ module Eval where
   import Tuple
   import TypeUtil
 
-  type IOThrowsError = ExceptT String IO
-
   eval :: Expr -> Env -> IOThrowsError Expr
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
