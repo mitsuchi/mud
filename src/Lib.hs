@@ -256,7 +256,7 @@ module Lib where
               expr' <- runExceptT (eval expr env')
               case expr' of 
                 Left  error -> putStrLn error                
-                Right val -> putStr ""
+                Right val -> putStrLn (show val)
   execEval ["eval"] = putStrLn $ "mud eval: run one-liner program\n"
     ++ "\n"
     ++ "Usage:\n"

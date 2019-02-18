@@ -57,7 +57,7 @@ module TypeEval where
     var <- liftIO $ lookupVarLoose name env
     env' <- liftIO $ readIORef env
     case var of
-      Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found. env=" ++ (show env'))
+      Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found.")
       Just (TypeLit x) -> return x
       Just (Fun types _ _ _) -> return types
       otherwise -> throwError $ show var
