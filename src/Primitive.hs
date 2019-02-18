@@ -5,7 +5,7 @@ module Primitive where
   import Data.Map as Map hiding (map)
   import Data.IORef
 
-  import DeepList
+  import RecList
   import Env
   import Expr
   import TypeUtil
@@ -89,66 +89,66 @@ module Primitive where
 
   insertPrimitives :: Env -> IO Env
   insertPrimitives env = do
-    insertCall "puts" (Plain [Elem "a", Elem "String"]) env    
-    insertCall "head" (Plain [Plain [Elem "List", Elem "a"], Elem "a"]) env    
-    insertCall "tail" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"]]) env    
-    insertCall "debug" (Plain [Elem "String", Elem "String", Elem "String"]) env    
-    insertCall "to_s" (Plain [Elem "Int", Elem "String"]) env
-    insertCall "to_s" (Plain [Elem "Double", Elem "String"]) env
-    insertCall "to_s" (Plain [Plain [Elem "List", Elem "a"], Elem "String"]) env
-    insertCall "to_s" (Plain [Elem "Bool", Elem "String"]) env
-    insertCall "+" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
-    insertCall "+" (Plain [Elem "String", Elem "String", Elem "String"]) env
-    insertCall "+" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
-    insertCall "+" (Plain [Elem "String", Elem "String", Elem "String"]) env
-    insertCall "+" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
-    insertCall "+" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
-    insertCall "+" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
-    insertCall "+" (Plain [Elem "a", Elem "a", Elem "a"]) env            
-    insertCall "-" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
-    insertCall "-" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
-    insertCall "-" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
-    insertCall "-" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
-    insertCall "-" (Plain [Elem "a", Elem "a", Elem "a"]) env        
-    insertCall "*" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
-    insertCall "*" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
-    insertCall "*" (Plain [Elem "String", Elem "Int", Elem "String"]) env
-    insertCall "*" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
-    insertCall "*" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
-    insertCall "*" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
-    --insertCall "*" (Plain [Elem "a", Elem "a", Elem "a"]) env        
-    insertCall "/" (Plain [Elem "Int", Elem "Int", Elem "Int"]) env
-    insertCall "/" (Plain [Elem "Double", Elem "Double", Elem "Double"]) env
-    insertCall "/" (Plain [Elem "Int", Elem "Double", Elem "Double"]) env
-    insertCall "/" (Plain [Elem "Double", Elem "Int", Elem "Double"]) env
-    insertCall "==" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
-    insertCall "==" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
-    insertCall "==" (Plain [Elem "String", Elem "String", Elem "Bool"]) env
-    insertCall "==" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
-    insertCall "==" (Plain [Plain [Elem "List", Elem "a"], Plain [Elem "List", Elem "a"], Elem "Bool"] ) env
-    insertCall "==" (Plain [Elem "a", Elem "a", Elem "Bool"]) env
-    insertCall "<" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
-    insertCall "<" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
-    insertCall "<" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
-    insertCall "<" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
-    insertCall "<" (Plain [Elem "a", Elem "a", Elem "Bool"]) env
-    insertCall "<=" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
-    insertCall "<=" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
-    insertCall "<=" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
-    insertCall "<=" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
-    insertCall "<=" (Plain [Elem "a", Elem "a", Elem "Bool"]) env    
-    insertCall ">" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
-    insertCall ">" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
-    insertCall ">" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
-    insertCall ">" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
-    insertCall ">" (Plain [Elem "a", Elem "a", Elem "Bool"]) env    
-    insertCall ">=" (Plain [Elem "Int", Elem "Int", Elem "Bool"]) env
-    insertCall ">=" (Plain [Elem "Double", Elem "Double", Elem "Bool"]) env
-    insertCall ">=" (Plain [Elem "Int", Elem "Double", Elem "Bool"]) env
-    insertCall ">=" (Plain [Elem "Double", Elem "Int", Elem "Bool"]) env
-    insertCall ">=" (Plain [Elem "a", Elem "a", Elem "Bool"]) env    
-    insertCall "&&" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
-    insertCall "||" (Plain [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "puts" (Elems [Elem "a", Elem "String"]) env    
+    insertCall "head" (Elems [Elems [Elem "List", Elem "a"], Elem "a"]) env    
+    insertCall "tail" (Elems [Elems [Elem "List", Elem "a"], Elems [Elem "List", Elem "a"]]) env    
+    insertCall "debug" (Elems [Elem "String", Elem "String", Elem "String"]) env    
+    insertCall "to_s" (Elems [Elem "Int", Elem "String"]) env
+    insertCall "to_s" (Elems [Elem "Double", Elem "String"]) env
+    insertCall "to_s" (Elems [Elems [Elem "List", Elem "a"], Elem "String"]) env
+    insertCall "to_s" (Elems [Elem "Bool", Elem "String"]) env
+    insertCall "+" (Elems [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "+" (Elems [Elem "String", Elem "String", Elem "String"]) env
+    insertCall "+" (Elems [Elem "Double", Elem "Double", Elem "Double"]) env
+    insertCall "+" (Elems [Elem "String", Elem "String", Elem "String"]) env
+    insertCall "+" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "+" (Elems [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "+" (Elems [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "+" (Elems [Elem "a", Elem "a", Elem "a"]) env            
+    insertCall "-" (Elems [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "-" (Elems [Elem "Double", Elem "Double", Elem "Double"]) env
+    insertCall "-" (Elems [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "-" (Elems [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "-" (Elems [Elem "a", Elem "a", Elem "a"]) env        
+    insertCall "*" (Elems [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "*" (Elems [Elem "Double", Elem "Double", Elem "Double"]) env
+    insertCall "*" (Elems [Elem "String", Elem "Int", Elem "String"]) env
+    insertCall "*" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "*" (Elems [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "*" (Elems [Elem "Double", Elem "Int", Elem "Double"]) env
+    --insertCall "*" (Elems [Elem "a", Elem "a", Elem "a"]) env        
+    insertCall "/" (Elems [Elem "Int", Elem "Int", Elem "Int"]) env
+    insertCall "/" (Elems [Elem "Double", Elem "Double", Elem "Double"]) env
+    insertCall "/" (Elems [Elem "Int", Elem "Double", Elem "Double"]) env
+    insertCall "/" (Elems [Elem "Double", Elem "Int", Elem "Double"]) env
+    insertCall "==" (Elems [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall "==" (Elems [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall "==" (Elems [Elem "String", Elem "String", Elem "Bool"]) env
+    insertCall "==" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "==" (Elems [Elems [Elem "List", Elem "a"], Elems [Elem "List", Elem "a"], Elem "Bool"] ) env
+    insertCall "==" (Elems [Elem "a", Elem "a", Elem "Bool"]) env
+    insertCall "<" (Elems [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall "<" (Elems [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall "<" (Elems [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall "<" (Elems [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall "<" (Elems [Elem "a", Elem "a", Elem "Bool"]) env
+    insertCall "<=" (Elems [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall "<=" (Elems [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall "<=" (Elems [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall "<=" (Elems [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall "<=" (Elems [Elem "a", Elem "a", Elem "Bool"]) env    
+    insertCall ">" (Elems [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall ">" (Elems [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall ">" (Elems [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall ">" (Elems [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall ">" (Elems [Elem "a", Elem "a", Elem "Bool"]) env    
+    insertCall ">=" (Elems [Elem "Int", Elem "Int", Elem "Bool"]) env
+    insertCall ">=" (Elems [Elem "Double", Elem "Double", Elem "Bool"]) env
+    insertCall ">=" (Elems [Elem "Int", Elem "Double", Elem "Bool"]) env
+    insertCall ">=" (Elems [Elem "Double", Elem "Int", Elem "Bool"]) env
+    insertCall ">=" (Elems [Elem "a", Elem "a", Elem "Bool"]) env    
+    insertCall "&&" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
+    insertCall "||" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
 
-  insertCall :: String -> DeepList Type -> Env -> IO Env
+  insertCall :: String -> RecList Type -> Env -> IO Env
   insertCall name types env = insertFun' name types (Call name (generalizeTypeSig types)) env

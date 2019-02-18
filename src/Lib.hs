@@ -7,7 +7,7 @@ module Lib where
   import System.IO
   import Text.Megaparsec
   
-  import DeepList
+  import RecList
   import Env  
   import Expr
   import Eval

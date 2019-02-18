@@ -10,12 +10,12 @@ module TypeEval where
 
   import Expr
   import Env
-  import DeepList
+  import RecList
   import Primitive
   import Tuple
   import TypeUtil 
 
-  typeEval :: Expr -> Env -> IOThrowsError (DeepList Type)
+  typeEval :: Expr -> Env -> IOThrowsError (RecList Type)
   typeEval (IntLit i) env = return $ Elem "Int"
   typeEval (StrLit s) env = return $ Elem "String"
   typeEval (BoolLit b) env = return $ Elem "Bool"
@@ -25,12 +25,12 @@ module TypeEval where
   typeEval (TypeSig sig _) env = return $ sig
   typeEval (TypeLit types) env = return types
   typeEval (Fun sig _ _ _) env = return $ sig
-  typeEval (ListLit [] _) env = return $ Plain [Elem "List", Elem "t0"]
+  typeEval (ListLit [] _) env = return $ Elems [Elem "List", Elem "t0"]
   -- リストの型は、要素すべてと同じ型。ひとつでも違う型があるとエラー。
   typeEval (ListLit es c) env = do
     es' <- mapM (\e -> typeEval e env) es
     if allTheSame es'
-      then return $ Plain [Elem "List", head es']
+      then return $ Elems [Elem "List", head es']
       else throwError $ (show $ lineOfCode c) ++ ":type mismatch. list can't contain different type of elements."
   typeEval (StructValue s) env = case M.lookup "type" s of
     Just (StrLit str) -> return $ Elem str
@@ -74,7 +74,7 @@ module TypeEval where
     typeEval (BinOp op code (TypeLit e1') (TypeLit e2')) env
   typeEval (Apply (Var name code) args) env = do
     args' <- mapM (\arg -> typeEval arg env) args
-    fun' <- liftIO $ lookupFun name (Plain args') env False
+    fun' <- liftIO $ lookupFun name (Elems args') env False
     --trace ("args': " ++ (show args') ++ ", fun " ++ (show fun')) $ return ()
     types <- case fun' of
       Just (Fun types _ _ _) -> return types
@@ -83,21 +83,21 @@ module TypeEval where
       Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found")
       otherwise -> throwError ("function not found. fun " ++ (show fun'))
     ts <- return $ generalizeTypesWith "t" types
-    xs <- return $ generalizeTypesWith "x" (Plain args')
+    xs <- return $ generalizeTypesWith "x" (Elems args')
     case unify (dInit ts) xs M.empty of
       Nothing -> throwError ((show $ lineOfCode code) ++ "ts:" ++ (show ts) ++ ",xs:" ++ (show xs) ++ ":fugafuga type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found.")
       --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (dLast ts) (M.map (\e -> typeInst e typeEnv) typeEnv)
       Just typeEnv -> let env1 = M.map (\e -> typeInst e typeEnv) typeEnv
         in return $ typeInst (dLast ts) $ M.mapWithKey (\k e -> cancelXs k e env1) env1
-    --typeEnv <- return $ findTypeEnv (dInit types) (Plain args') M.empty False      
+    --typeEnv <- return $ findTypeEnv (dInit types) (Elems args') M.empty False      
     -- case typeEnv of
     --   Just tenv -> return $ typeInst (dLast types) tenv
     --   Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. can not apply function")
   typeEval (Apply (TypeLit types) args) env = do
     args' <- mapM (\arg -> typeEval arg env) args
-    --case findTypeEnv types (Plain args') M.empty False of
+    --case findTypeEnv types (Elems args') M.empty False of
     ts <- return $ generalizeTypesWith "t" types
-    xs <- return $ generalizeTypesWith "x" (Plain args')
+    xs <- return $ generalizeTypesWith "x" (Elems args')
     case unify (dInit ts) xs M.empty of
       Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map dArrow args')
       --Just typeEnv -> return $ dLast types
@@ -123,8 +123,8 @@ module TypeEval where
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
-    --case findTypeEnv types (dAppend (dInit types) (Plain [body'])) M.empty False of
-    case unify types (dAppend (dInit types) (Plain [body'])) M.empty of
+    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) M.empty False of
+    case unify types (dAppend (dInit types) (Elems [body'])) M.empty of
       Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env 
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"
   typeEval (FunDefAnon types params body) env = do
@@ -133,13 +133,13 @@ module TypeEval where
     env' <- liftIO $ newEnv params (map TypeLit (dArgs (generalizeTypeSig types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
-    --case findTypeEnv types (dAppend (dInit types) (Plain [body'])) M.empty False of
-    case unify types (dAppend (dInit types) (Plain [body'])) M.empty of      
+    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) M.empty False of
+    case unify types (dAppend (dInit types) (Elems [body'])) M.empty of      
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypeSig types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"    
-  typeEval (Case es matchPairs (Plain types')) env = do
-    (Plain types) <- return $ generalizeTypeSig (Plain types')
+  typeEval (Case es matchPairs (Elems types')) env = do
+    (Elems types) <- return $ generalizeTypeSig (Elems types')
     matchAll <- liftIO $ andM $ map ( \(args, body, guard) -> do
       (bool, typeEnv) <- matchCondType (init types) args guard M.empty env
       bool' <- if bool then matchResultType body (last types) typeEnv env else return False
@@ -149,8 +149,8 @@ module TypeEval where
       then return $ last types
       else throwError "type mismatch. condition no match"
   typeEval (TypeDef (Var name code) typeDef) env = do
-    forM_ typeDef $ \(member, (Plain [typeList])) -> do
-      typeEval (FunDef (Var member code) (Plain [Elem name, typeList]) ["x"] (TypeLit typeList)) env
+    forM_ typeDef $ \(member, (Elems [typeList])) -> do
+      typeEval (FunDef (Var member code) (Elems [Elem name, typeList]) ["x"] (TypeLit typeList)) env
     typeEval (FunDef (Var name code) types params (TypeLit (dLast types))) env    
     where types = typeDefToTypes typeDef name
           params = map fst typeDef
@@ -172,7 +172,7 @@ module TypeEval where
 
   -- body types typeEnv env
   -- 型環境 typeEnv と env のもとで body を評価して、その型が types とマッチするかどうか
-  matchResultType :: Expr -> DeepList Type -> M.Map String (DeepList Type) -> Env -> IO Bool
+  matchResultType :: Expr -> RecList Type -> M.Map String (RecList Type) -> Env -> IO Bool
   matchResultType body types typeEnv env = do
     varMap' <- liftIO $ readIORef env
     env' <- newIORef varMap'
@@ -193,7 +193,7 @@ module TypeEval where
     then allTheSame es
     else False
 
-  newEnv :: [String] -> [Expr] -> (M.Map String [(DeepList String, Expr)]) -> IO Env
+  newEnv :: [String] -> [Expr] -> (M.Map String [(RecList String, Expr)]) -> IO Env
   newEnv params args outerEnv = do
     env <- newIORef outerEnv
     mapM_ (\p -> insertAny p env) (zip params args)
@@ -203,12 +203,12 @@ module TypeEval where
   insertAny (name, expr) env = case expr of
     (Fun types _ _ _) -> insertFun name types expr env
     (TypeLit types)   -> case types of
-      Plain types' -> insertFun name types expr env
+      Elems types' -> insertFun name types expr env
       Elem type'   -> insertVarForce name expr env
     otherwise         -> insertVarForce name expr env
 
   -- マッチ式の引数の列が、与えられた型の列(マッチ式を含む関数の型)とマッチするか？
-  matchCondType :: [DeepList Type] -> [Expr] -> Maybe Expr -> M.Map String (DeepList Type) -> Env -> IO (Bool, M.Map String (DeepList Type))
+  matchCondType :: [RecList Type] -> [Expr] -> Maybe Expr -> M.Map String (RecList Type) -> Env -> IO (Bool, M.Map String (RecList Type))
   matchCondType (e1:e1s) ((Var v _):e2s) guard varMap env = 
     -- マッチ式に変数がくる場合：変数に対する型の既存の割り当てと矛盾しなければマッチ      
     case M.lookup v varMap of
@@ -216,7 +216,7 @@ module TypeEval where
       Just types -> if types == e1
         then matchCondType e1s e2s guard varMap env
         else return (False, M.empty)
-  matchCondType (listType@(Plain [Elem "List", Elem a]):e1s) ((ListLit [Var e _, Var es _] _):e2s) guard varMap env = do
+  matchCondType (listType@(Elems [Elem "List", Elem a]):e1s) ((ListLit [Var e _, Var es _] _):e2s) guard varMap env = do
     -- マッチ式にリスト([e;es])がくる場合
     -- 対応する引数の型もリストであることが必要
     -- それを [a] とすると、e:a, es:[a] を型環境に割り当てる
@@ -254,23 +254,23 @@ module TypeEval where
   ifM b t f = do b <- b; if b then t else f
 
   -- 型もしくは型変数を、型環境を元にインスタンス化する
-  typeInst :: DeepList Type -> M.Map String (DeepList Type) -> DeepList Type
+  typeInst :: RecList Type -> M.Map String (RecList Type) -> RecList Type
   typeInst (Elem a) env | isUpper(a!!0) = Elem a
   typeInst (Elem a) env | isLower(a!!0) = case M.lookup a env of
     Just types -> types
     Nothing -> Elem a
-  typeInst (Plain es) env = Plain (map (\e -> typeInst e env) es)
+  typeInst (Elems es) env = Elems (map (\e -> typeInst e env) es)
 
   -- 型環境において、キーとなる型変数の値が型変数だった場合、値をキー自身で上書きする
-  cancelXs :: String -> DeepList Type -> M.Map String (DeepList Type) -> DeepList Type
+  cancelXs :: String -> RecList Type -> M.Map String (RecList Type) -> RecList Type
   cancelXs key value env | isConcrete value = value
   --cancelXs key value env | hasVariable value = Elem key
   cancelXs key value env | hasVariable value = renameType value
 
   -- [x0] -> x1 を [t0] -> t1 に変更する
-  renameType :: DeepList Type -> DeepList Type
+  renameType :: RecList Type -> RecList Type
   renameType (Elem ('x':xs)) = Elem ('t':xs)
   renameType (Elem xs) = Elem xs
-  renameType (Plain es) = Plain (map renameType es)
+  renameType (Elems es) = Elems (map renameType es)
 
 

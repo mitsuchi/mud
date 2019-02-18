@@ -9,7 +9,7 @@ module Eval where
 
   import Expr
   import Env
-  import DeepList
+  import RecList
   import Primitive
   import Tuple
   import TypeUtil
@@ -68,7 +68,7 @@ module Eval where
     eval body env'
   eval (Apply (Var name code) args) env = do
     args' <- mapM (\arg -> eval arg env) args
-    fun' <- liftIO $ lookupFun name (Plain (map typeOf' args')) env False
+    fun' <- liftIO $ lookupFun name (Elems (map typeOf' args')) env False
     case fun' of
       Just fun -> eval (Apply fun args') env
       Nothing -> call name args' env code
@@ -100,8 +100,8 @@ module Eval where
       BoolLit False -> eval elseExpr env
       otherwise -> error ("cond = " ++ show (cond'))
   eval (TypeDef (Var name code) typeDef) env = do
-    forM_ typeDef $ \(member, (Plain [typeList])) -> do
-      eval (FunDef (Var member code) (Plain [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct" emptyCode) [Var "x" emptyCode, StrLit member])) env
+    forM_ typeDef $ \(member, (Elems [typeList])) -> do
+      eval (FunDef (Var member code) (Elems [Elem name, typeList]) ["x"] (Apply (Var "lookupStruct" emptyCode) [Var "x" emptyCode, StrLit member])) env
     eval (FunDef (Var name code) types params (Apply (Var "makeStruct" emptyCode) (StrLit name : map StrLit params))) env    
     where types = typeDefToTypes typeDef name
           params = map fst typeDef
@@ -114,7 +114,7 @@ module Eval where
     liftIO $ insertPrimitives env
     eval expr env
       
-  newEnv :: [String] -> [Expr] -> (Map String [(DeepList String, Expr)]) -> IO Env
+  newEnv :: [String] -> [Expr] -> (Map String [(RecList String, Expr)]) -> IO Env
   newEnv params args outerEnv = do
     env <- newIORef outerEnv
     mapM_ (\p -> insertAny p env) (zip params args)

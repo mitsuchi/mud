@@ -7,7 +7,7 @@ module Expr where
   import Data.Maybe
   import Debug.Trace
 
-  import DeepList
+  import RecList
   import Env
 
   type Name = String
@@ -26,21 +26,21 @@ module Expr where
     | BinOp Op Code Expr Expr
     | Seq [Expr]
     | Assign NameExpr Expr
-    | FunDef NameExpr (DeepList Type) [Param] Expr
-    | FunDefAnon (DeepList Type) [Param] Expr
-    | Fun (DeepList Type) [Param] Expr Env
+    | FunDef NameExpr (RecList Type) [Param] Expr
+    | FunDefAnon (RecList Type) [Param] Expr
+    | Fun (RecList Type) [Param] Expr Env
     | Apply Expr [Expr]
-    | Case [Expr] [([Expr],Expr,Maybe Expr)] (DeepList Type)
-    | TypeSig (DeepList Type) Expr
-    | TypeLit (DeepList Type)
+    | Case [Expr] [([Expr],Expr,Maybe Expr)] (RecList Type)
+    | TypeSig (RecList Type) Expr
+    | TypeLit (RecList Type)
     | ListLit [Expr] Code
     | BoolLit Bool
     | If Expr Expr Expr -- If CondEx ThenEx ElseEx
     | Neg Expr
-    | TypeDef NameExpr [(String, DeepList Type)]
-    | StructType [(String, DeepList Type)]
+    | TypeDef NameExpr [(String, RecList Type)]
+    | StructType [(String, RecList Type)]
     | StructValue (Map Name Expr)
-    | Call Name (DeepList Type)
+    | Call Name (RecList Type)
 
   type NameExpr = Expr
 
@@ -97,15 +97,15 @@ module Expr where
   -- showMembers Map.empty = ""
   -- showMembers 
 
-  typeOf' :: Expr -> DeepList String
+  typeOf' :: Expr -> RecList String
   typeOf' (IntLit i) = Elem "Int"
   typeOf' (StrLit s) = Elem "String"
   typeOf' (BoolLit b) = Elem "Bool"
   typeOf' (DoubleLit b) = Elem "Double"
   typeOf' (TypeSig sig _) = sig
   typeOf' (Fun sig _ _ _) = sig
-  typeOf' (ListLit (e:es) _) = Plain [Elem "List", typeOf' e]
-  typeOf' (ListLit [] _) = Plain [Elem "List", Elem "a"]
+  typeOf' (ListLit (e:es) _) = Elems [Elem "List", typeOf' e]
+  typeOf' (ListLit [] _) = Elems [Elem "List", Elem "a"]
   typeOf' (StructValue s) = case Map.lookup "type" s of
     Just (StrLit str) -> Elem str
     Nothing           -> error "type not defined in struct value"

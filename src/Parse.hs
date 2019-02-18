@@ -8,7 +8,7 @@ module Parse where
   import Text.Megaparsec.Char
   import qualified Text.Megaparsec.Char.Lexer as L
 
-  import DeepList
+  import RecList
   import Expr
   import Tuple
 
@@ -121,8 +121,8 @@ module Parse where
       Nothing -> return $ makeGeneralType (length params)
     return $ FunDefAnon sig params body
 
-  makeGeneralType :: Int -> DeepList String
-  makeGeneralType n = Plain (map (\x -> Elem ("t" ++ show x)) [0..n])
+  makeGeneralType :: Int -> RecList String
+  makeGeneralType n = Elems (map (\x -> Elem ("t" ++ show x)) [0..n])
 
   exprWithTypeSig :: Parser Expr
   exprWithTypeSig = do
@@ -191,7 +191,7 @@ module Parse where
     symbol "}"
     return $ TypeDef name types
 
-  memberWithType :: Parser (String, DeepList Type)
+  memberWithType :: Parser (String, RecList Type)
   memberWithType = do
     member <- identifier
     symbol ":"
@@ -258,23 +258,23 @@ module Parse where
     args <- some arg
     return $ Apply caller args
 
-  typeList :: Parser (DeepList String)
+  typeList :: Parser (RecList String)
   typeList = do
     term1 <- typeTerm
     terms <- many $ (symbol "->") *> typeTerm
-    return $ Plain (term1 : terms)
+    return $ Elems (term1 : terms)
 
-  typeTerm :: Parser (DeepList String)
+  typeTerm :: Parser (RecList String)
   typeTerm = try listTerm
     <|> (Elem <$> identifier)
     <|> parens typeList
 
-  listTerm :: Parser (DeepList String)
+  listTerm :: Parser (RecList String)
   listTerm = do
     symbol "["
     term <- identifier
     symbol "]"
-    return $ Plain [ Elem "List", Elem term ]    
+    return $ Elems [ Elem "List", Elem term ]    
   
   getCode :: Parser Code
   getCode = do
