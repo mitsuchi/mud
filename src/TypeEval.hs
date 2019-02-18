@@ -60,7 +60,7 @@ module TypeEval where
       Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found. env=" ++ (show env'))
       Just (TypeLit x) -> return x
       Just (Fun types _ _ _) -> return types
-      --otherwise -> throwError $ show var
+      otherwise -> throwError $ show var
   typeEval (BinOp Eq _ v e) env = do
     t' <- typeEval e env
     typeEval (Assign v (TypeLit t')) env
