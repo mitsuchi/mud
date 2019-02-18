@@ -2,12 +2,12 @@ module TypeUtil where
 
   import Control.Monad.Except
   import Data.Char
-  import qualified Data.Map as M
+  import Data.Map as Map
   import RecList
 
   type IOThrowsError = ExceptT String IO
 
-  findTypeEnv :: RecList String -> RecList String -> M.Map String (RecList String) -> Bool -> Maybe (M.Map String (RecList String))
+  findTypeEnv :: RecList String -> RecList String -> Map String (RecList String) -> Bool -> Maybe (Map String (RecList String))
   --findTypeEnv (Elem a) (Elem b) env strict | (isUpper (a!!0) && isUpper (b!!0)) = Just env
   findTypeEnv (Elem a) (Elem b) env strict | (not strict && isUpper (a!!0) && isUpper (b!!0) ) || strict =
     if a == b then (Just env) else Nothing
@@ -16,8 +16,8 @@ module TypeUtil where
   findTypeEnv (Elem a) (Elems bs) env strict | (not strict && isUpper (a!!0) ) || strict = Nothing
   findTypeEnv (Elem "_") (Elems bs) env strict = Nothing
   findTypeEnv (Elem a) b env strict | (not strict && isLower (a!!0) ) || strict = 
-    let mapped = M.lookup a env in
-    if mapped == Nothing then Just (M.insert a b env)
+    let mapped = Map.lookup a env in
+    if mapped == Nothing then Just (Map.insert a b env)
     else if mapped == Just b then Just env 
     else Nothing
   findTypeEnv (Elems as) (Elem b) env strict = Nothing
@@ -32,22 +32,22 @@ module TypeUtil where
 
   isConcrete :: RecList String -> Bool
   isConcrete (Elem a) = (a == "List") || isUpper (a!!0)
-  isConcrete (Elems xs) = and (map isConcrete xs)
+  isConcrete (Elems xs) = and (Prelude.map isConcrete xs)
 
   isVariable :: RecList String -> Bool
   isVariable (Elem a) = (a == "List") || isLower (a!!0)
-  isVariable (Elems xs) = and (map isVariable xs)
+  isVariable (Elems xs) = and (Prelude.map isVariable xs)
 
   -- 型にひとつでも型変数を含むか？
   hasVariable :: RecList String -> Bool
   hasVariable (Elem a) = isLower (a!!0)
-  hasVariable (Elems xs) = or (map isVariable xs)  
+  hasVariable (Elems xs) = or (Prelude.map isVariable xs)  
 
   generalizeTypeSig :: RecList String -> RecList String
   generalizeTypeSig list = gnrlize' list (makeMap (dFlatten list))
 
-  gnrlize' :: RecList String -> M.Map String Int -> RecList String
-  gnrlize' (Elem e) table = case M.lookup e table of
+  gnrlize' :: RecList String -> Map String Int -> RecList String
+  gnrlize' (Elem e) table = case Map.lookup e table of
     Nothing -> Elem e
     Just i -> Elem ("t" ++ show i)
   gnrlize' (Elems []) table = Elems []
@@ -55,14 +55,14 @@ module TypeUtil where
     let (Elems rest') = (gnrlize' (Elems es) table)
     in Elems ((gnrlize' e table) : rest')
 
-  makeMap :: [String] -> M.Map String Int
-  makeMap list = makeMap' list 0 M.empty
+  makeMap :: [String] -> Map String Int
+  makeMap list = makeMap' list 0 Map.empty
 
-  makeMap' :: [String] -> Int -> M.Map String Int -> M.Map String Int
+  makeMap' :: [String] -> Int -> Map String Int -> Map String Int
   makeMap' [] num table = table
   makeMap' (e:es) num table = if isUpper(e !! 0) then (makeMap' es num table) else 
-    case M.lookup e table of
-      Nothing -> makeMap' es (num+1) (M.insert e num table)
+    case Map.lookup e table of
+      Nothing -> makeMap' es (num+1) (Map.insert e num table)
       Just i  -> makeMap' es num table
 
 
@@ -75,8 +75,8 @@ module TypeUtil where
   generalizeTypesWith :: String -> RecList String -> RecList String
   generalizeTypesWith str list = gnrlizeWith str list (makeMap (dFlatten list))
 
-  gnrlizeWith :: String -> RecList String -> M.Map String Int -> RecList String
-  gnrlizeWith str (Elem e) table = case M.lookup e table of
+  gnrlizeWith :: String -> RecList String -> Map String Int -> RecList String
+  gnrlizeWith str (Elem e) table = case Map.lookup e table of
     Nothing -> Elem e
     Just i -> Elem (str ++ show i)
   gnrlizeWith str (Elems []) table = Elems []
@@ -91,7 +91,7 @@ module TypeUtil where
   -- 2. 引数の型のリスト。例：[Elem "String", Elem "Int"]
   -- あれそれって、findTypeEnv だな。でした。
   -- でも別につくってみる。対応が矛盾する場合には Nothing を返す。あれば Just 型環境を返す（空かもしれない）
-  unify :: RecList String -> RecList String -> M.Map String (RecList String) -> Maybe (M.Map String (RecList String))
+  unify :: RecList String -> RecList String -> Map String (RecList String) -> Maybe (Map String (RecList String))
   unify a b env | isConcrete a && isConcrete b = 
     -- 両方とも具体型の場合は、一致するかどうかを見る
     if a == b then Just env else Nothing
@@ -107,15 +107,15 @@ module TypeUtil where
     case unify a b env of
       Nothing -> Nothing
       Just env' -> unify (Elems as) (Elems bs) env'
-  unify (Elem "_") b env = Just M.empty
+  unify (Elem "_") b env = Just Map.empty
   unify _ _ _ = Nothing -- 上記以外の場合は失敗
 
-  push :: String -> RecList String -> M.Map String (RecList String) -> Maybe (M.Map String (RecList String))
+  push :: String -> RecList String -> Map String (RecList String) -> Maybe (Map String (RecList String))
   push t x env = 
     -- 環境から ft をキーとする型を引いてくる
-    case M.lookup t env of
+    case Map.lookup t env of
       -- なにもなければ、単に環境に追加する
-      Nothing -> Just (M.insert t x env)
+      Nothing -> Just (Map.insert t x env)
       -- 既存に登録(x0)がある場合は、既存と新規の型の種類に応じて場合分けする
       Just x0 -> case (x0, x) of
         (x0, x)
@@ -128,7 +128,7 @@ module TypeUtil where
           | isConcrete(x0) && isVariable(x) -> unify x x0 env
           -- x0が型変数、xが具体型の場合
           -- E(t:x0) を E(t:x) + x0:x とする。必要なら衝突処理を行う。
-          | isVariable(x0) && isConcrete(x) -> unify x0 x (M.insert t x env)
+          | isVariable(x0) && isConcrete(x) -> unify x0 x (Map.insert t x env)
           -- x0が型変数、xが型変数の場合
           -- E(t:x0) を E(t:x0) + x0:x とする。必要なら衝突処理を行う。
           | isVariable(x0) && isVariable(x) -> unify x0 x env
