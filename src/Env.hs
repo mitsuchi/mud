@@ -67,14 +67,7 @@ module Env where
       funs <- Map.lookup name env'
       if hasVariable types
         then lastMatch (generalizeTypesWith "x" types) funs strict
-        --else trace ("firstMatch: type: " ++ (show (generalizeTypesWith "x" types)) ++ ", funs: " ++ (show funs) ++ ", strict: " ++ (show strict)) $ firstMatch (generalizeTypesWith "x" types) funs strict
         else firstMatch (generalizeTypesWith "x" types) funs strict
-      -- if hasVariable types
-      --   then let fun' = firstMatch (generalizeTypesWith "x" types) funs strict True
-      --     in case fun' of
-      --       Nothing -> firstMatch (generalizeTypesWith "x" types) funs strict False
-      --       Just fun -> fun'
-      --   else firstMatch (generalizeTypesWith "x" types) funs strict False
 
   firstMatch :: (Show a) => RecList String -> [(RecList String, a)] -> Bool -> Maybe a
   firstMatch types [] strict = Nothing

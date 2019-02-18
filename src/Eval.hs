@@ -27,7 +27,6 @@ module Eval where
     var <- liftIO $ lookupVarLoose name env
     env' <- liftIO $ readIORef env
     case var of
-      -- Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found, env = " ++ (show env'))
       Nothing -> throwError ((show $ lineOfCode c) ++ ":variable '" ++ name ++ "' not found")
       Just x -> return x
   eval (Neg expr) env = eval (BinOp (OpLit "-") emptyCode (IntLit 0) expr) env
@@ -62,7 +61,6 @@ module Eval where
     return $ Fun types params body env
   eval (Apply (Call name _) args) env = call name args env emptyCode
   eval (Apply (Fun types params body outerEnv) args) env = do
-    --trace ("apply: body=" ++ (show body)) $ return ()
     varMap <- liftIO $ readIORef outerEnv
     env' <- liftIO $ newEnv params args varMap
     eval body env'
@@ -73,7 +71,6 @@ module Eval where
       Just fun -> eval (Apply fun args') env
       Nothing -> call name args' env code
   eval (Apply expr args) env = do
-    --trace ("apply: last") $ return ()
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
     eval (Apply expr' args') env
@@ -90,7 +87,6 @@ module Eval where
       Just fun -> return fun
       Nothing -> do
         env' <- liftIO $ readIORef env
-        -- throwError (name ++ " not found , env = " ++ (show env'))
         throwError ("function '" ++ name ++ "' not found")
   eval (TypeSig sig expr) env = eval expr env
   eval (If condExpr thenExpr elseExpr) env = do
