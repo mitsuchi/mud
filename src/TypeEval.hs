@@ -15,6 +15,13 @@ module TypeEval where
   import Tuple
   import TypeUtil
 
+  typeEvalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
+  typeEvalWithPrimitiveEnv expr = do
+    env <- liftIO $ newIORef M.empty
+    liftIO $ insertPrimitives env
+    expr' <- typeEval expr env
+    return $ TypeLit expr'
+
   typeEval :: Expr -> Env -> IOThrowsError (DeepList Type)
   typeEval (IntLit i) env = return $ Elem "Int"
   typeEval (StrLit s) env = return $ Elem "String"

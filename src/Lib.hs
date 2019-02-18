@@ -85,31 +85,12 @@ module Lib where
       Left bundle -> putStrLn (errorBundlePretty bundle)        
       Right expr -> putStrLn (show expr)
 
-  -- プログラム文字列をパースして型評価して結果をIO文字列で返す  
-  parseTypeCheckEval :: String -> IO String
-  parseTypeCheckEval program = 
-    case parseProgram program of
-      Left bundle -> return $ (errorBundlePretty bundle)        
-      Right expr -> do
-        env <- newIORef Map.empty
-        insertPrimitives env
-        typeSig <- runExceptT (typeEval expr env)
-        case typeSig of
-          Left error -> return $ error
-          Right val -> do
-            env' <- newIORef Map.empty
-            insertPrimitives env'
-            expr' <- runExceptT (eval expr env')
-            case expr' of 
-              Left  error -> return error                
-              Right val -> return (show val)
-
   -- プログラムをファイルから読み、型評価し、評価し、結果を表示する
   execRun :: [String] -> IO ()
   execRun ["run", filename] = do
     withFile filename ReadMode $ \handle -> do
       program <- hGetContents handle
-      output <- parseTypeCheckEval program
+      output <- ev program
       putStrLn output
   execRun ["run"] = putStrLn $ "mud run: run Mud program\n"
     ++ "\n"
@@ -124,7 +105,7 @@ module Lib where
   -- プログラム文字列を型評価し、評価し、結果を表示する
   execEval :: [String] -> IO ()
   execEval ["eval", program] = do
-    output <- parseTypeCheckEval program
+    output <- ev program
     putStrLn output
   execEval ["eval"] = putStrLn $ "mud eval: run one-liner program\n"
     ++ "\n"
@@ -143,38 +124,39 @@ module Lib where
   pa program = parse topLevel "<stdin>" program
   
   -- プログラムの文字列をパースして型評価する
-  te :: String -> IO ()
-  te program = case pa program of
-    Right expr -> do
-      env <- newIORef Map.empty
-      insertPrimitives env
-      typeSig <- runExceptT (typeEval expr env)
-      case typeSig of
-        Right val -> putStrLn (show typeSig)
-        Left error -> putStrLn error
-    Left bundle -> putStr (errorBundlePretty bundle)
+  te :: String -> IO String
+  te program = do    
+    output <- runExceptT $ do
+      expr <- parseString program
+      typeEvalWithPrimitiveEnv expr
+    case output of
+      Left error -> return $ error
+      Right expr -> return $ show expr
 
   -- ファイルからプログラムを読んでパースして、型評価する    
   tef :: String -> IO ()
   tef file = do 
     program <- readFile file
-    te program
+    output <- te program
+    putStrLn output
 
-  -- プログラムの文字列をパースして評価して結果を表示する
-  ev :: String -> IO ()
+  -- プログラムの文字列をパースして型評価して評価して結果を表示する
+  ev :: String -> IO String
   ev program = do
     output <- runExceptT $ do
       expr <- parseString program
+      typeEvalWithPrimitiveEnv expr
       evalWithPrimitiveEnv expr
     case output of
-      Left error -> putStrLn error
-      Right expr -> putStrLn (show expr)  
+      Left error -> return $ error
+      Right expr -> return $ show expr
 
   -- ファイルからプログラムを読んでパースして評価して結果を表示する
   evf :: String -> IO ()
   evf file = do 
     program <- readFile file
-    ev program
+    output <- ev program
+    putStrLn output
   
   -- ファイルからプログラムを読んでパースする
   paf :: String -> IO ()

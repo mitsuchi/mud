@@ -109,4 +109,4 @@ main = do
     ]
 
 pe :: String -> String
-pe program = unsafePerformIO (Lib.parseTypeCheckEval program)
+pe program = unsafePerformIO (Lib.ev program)
