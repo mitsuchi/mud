@@ -165,8 +165,7 @@ module Lib where
   ev program = do
     output <- runExceptT $ do
       expr <- parseString program
-      output <- evalWithEmptyEnv expr
-      return output
+      evalWithPrimitiveEnv expr
     case output of
       Left error -> putStrLn error
       Right expr -> putStrLn (show expr)  
@@ -184,8 +183,8 @@ module Lib where
     print $ pa program    
 
   -- 空の環境で式を評価する
-  evalWithEmptyEnv :: Expr -> IOThrowsError Expr
-  evalWithEmptyEnv expr = do
+  evalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
+  evalWithPrimitiveEnv expr = do
     env <- liftIO $ newIORef Map.empty
     liftIO $ insertPrimitives env
     eval expr env
