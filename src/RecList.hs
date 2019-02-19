@@ -7,9 +7,9 @@ module RecList where
   rArgs (Elem x) = [Elem x]
   rArgs (Elems xs) = init xs
 
-  dInit :: RecList a -> RecList a
-  dInit (Elem x) = Elem x
-  dInit (Elems xs) = Elems (init xs)
+  rInit :: RecList a -> RecList a
+  rInit (Elem x) = Elem x
+  rInit (Elems xs) = Elems (init xs)
 
   dLast :: RecList a -> RecList a
   dLast (Elem x) = Elem x

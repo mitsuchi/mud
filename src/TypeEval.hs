@@ -84,7 +84,7 @@ module TypeEval where
       otherwise -> throwError ("function not found. fun " ++ (show fun'))
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
-    case unify (dInit ts) xs Map.empty of
+    case unify (rInit ts) xs Map.empty of
       Nothing -> throwError ((show $ lineOfCode code) ++ "ts:" ++ (show ts) ++ ",xs:" ++ (show xs) ++ ":fugafuga type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found.")
       --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (dLast ts) (Map.map (\e -> typeInst e typeEnv) typeEnv)
       Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
@@ -96,7 +96,7 @@ module TypeEval where
     args' <- mapM (\arg -> typeEval arg env) args
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
-    case unify (dInit ts) xs Map.empty of
+    case unify (rInit ts) xs Map.empty of
       Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map dArrow args')
       --Just typeEnv -> return $ dLast types
       Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
@@ -121,7 +121,7 @@ module TypeEval where
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
-    case unify types (dAppend (dInit types) (Elems [body'])) Map.empty of
+    case unify types (dAppend (rInit types) (Elems [body'])) Map.empty of
       Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env 
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"
   typeEval (FunDefAnon types params body) env = do
@@ -130,7 +130,7 @@ module TypeEval where
     env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypeSig types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
-    case unify types (dAppend (dInit types) (Elems [body'])) Map.empty of      
+    case unify types (dAppend (rInit types) (Elems [body'])) Map.empty of      
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypeSig types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"    

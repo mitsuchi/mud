@@ -82,7 +82,7 @@ module Eval where
                    in eval (Apply (Fun types params (snd3 pair) env) args) env
       Nothing   -> throwError "condition no match"
   eval expr@(TypeSig sig (Var name _)) env = do
-    fun' <- liftIO $ lookupFun name (dInit sig) env False
+    fun' <- liftIO $ lookupFun name (rInit sig) env False
     case fun' of
       Just fun -> return fun
       Nothing -> do

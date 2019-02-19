@@ -74,7 +74,7 @@ module Env where
   firstMatch types ((types', expr):es) strict = 
     if strict
       then if types' == types then Just expr else firstMatch types es strict
-      else case unify (dInit types') types Map.empty of
+      else case unify (rInit types') types Map.empty of
         Nothing -> firstMatch types es strict
         Just env -> Just expr
 
