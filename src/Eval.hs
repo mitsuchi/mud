@@ -11,7 +11,6 @@ module Eval where
   import Env
   import RecList
   import Primitive
-  import Tuple
   import TypeUtil
 
   eval :: Expr -> Env -> IOThrowsError Expr

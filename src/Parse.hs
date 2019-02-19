@@ -10,7 +10,6 @@ module Parse where
 
   import RecList
   import Expr
-  import Tuple
 
   type Parser = Parsec Void String
 

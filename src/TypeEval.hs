@@ -12,7 +12,6 @@ module TypeEval where
   import Env
   import RecList
   import Primitive
-  import Tuple
   import TypeUtil 
 
   typeEval :: Expr -> Env -> IOThrowsError (RecList Type)
@@ -75,7 +74,6 @@ module TypeEval where
   typeEval (Apply (Var name code) args) env = do
     args' <- mapM (\arg -> typeEval arg env) args
     fun' <- liftIO $ lookupFun name (Elems args') env False
-    --trace ("args': " ++ (show args') ++ ", fun " ++ (show fun')) $ return ()
     types <- case fun' of
       Just (Fun types _ _ _) -> return types
       Just (Call name types) -> return types
@@ -86,19 +84,14 @@ module TypeEval where
     xs <- return $ generalizeTypesWith "x" (Elems args')
     case unify (rInit ts) xs Map.empty of
       Nothing -> throwError ((show $ lineOfCode code) ++ "ts:" ++ (show ts) ++ ",xs:" ++ (show xs) ++ ":fugafuga type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map rArrow args') ++ " -> ?' not found.")
-      --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (rLast ts) (Map.map (\e -> typeInst e typeEnv) typeEnv)
       Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
         in return $ typeInst (rLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
-    -- case typeEnv of
-    --   Just tenv -> return $ typeInst (rLast types) tenv
-    --   Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. can not apply function")
   typeEval (Apply (TypeLit types) args) env = do
     args' <- mapM (\arg -> typeEval arg env) args
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
     case unify (rInit ts) xs Map.empty of
       Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map rArrow args')
-      --Just typeEnv -> return $ rLast types
       Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
         in return $ typeInst (rLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
   typeEval (Apply expr args) env = do
@@ -111,7 +104,6 @@ module TypeEval where
     if cond' == Elem "Bool"
       then if then' == else'
         then return then'
-        --else throwError $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
         else error $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
       else throwError $ "type mismatch. condition-part has a type '" ++ (show cond') ++ "'. must be 'Bool'."
   typeEval (FunDef nameExpr@(Var name code) types params body) env = do
