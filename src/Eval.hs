@@ -74,12 +74,12 @@ module Eval where
     expr' <- eval expr env
     args' <- mapM (\arg -> eval arg env) args
     eval (Apply expr' args') env
-  eval (Case es matchPairs types) env = do
+  eval (Case es matchExprs types) env = do
     es' <- mapM (\e -> eval e env ) es
-    pair' <- lift $ findM (\pair -> matchCond es' (fst3 pair) (thd3 pair) Map.empty env) matchPairs
+    pair' <- lift $ findM (\(args, body, guard) -> matchCond es' args guard Map.empty env) matchExprs
     case pair' of 
-      Just pair -> let (params, args) = paramsAndArgs (fst3 pair) es'
-                   in eval (Apply (Fun types params (snd3 pair) env) args) env
+      Just (args, body, guard) -> let (params, args') = paramsAndArgs args es'
+                   in eval (Apply (Fun types params body env) args') env
       Nothing   -> throwError "condition no match"
   eval expr@(TypeSig sig (Var name _)) env = do
     fun' <- liftIO $ lookupFun name (rInit sig) env False

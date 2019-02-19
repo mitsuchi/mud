@@ -134,13 +134,13 @@ module TypeEval where
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypes types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"    
-  typeEval (Case es matchPairs (Elems types')) env = do
+  typeEval (Case es matchExprs (Elems types')) env = do
     (Elems types) <- return $ generalizeTypes (Elems types')
     matchAll <- liftIO $ andM $ map ( \(args, body, guard) -> do
       (bool, typeEnv) <- matchCondType (init types) args guard Map.empty env
       bool' <- if bool then matchResultType body (last types) typeEnv env else return False
       return bool'
-      ) matchPairs
+      ) matchExprs
     if matchAll
       then return $ last types
       else throwError "type mismatch. condition no match"

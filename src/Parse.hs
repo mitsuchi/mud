@@ -232,7 +232,8 @@ module Parse where
         paramNum matches = length (fst3 (head matches))
         paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
         varList n = map (\v -> Var v (Code { lineOfCode = 1 })) (paramList n)
-
+        fst3 (a,b,c) = a
+        
   ifExpr :: Parser Expr
   ifExpr = do
     rword "if"
