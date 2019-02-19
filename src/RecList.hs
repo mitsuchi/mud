@@ -11,13 +11,13 @@ module RecList where
   rInit (Elem x) = Elem x
   rInit (Elems xs) = Elems (init xs)
 
-  dLast :: RecList a -> RecList a
-  dLast (Elem x) = Elem x
-  dLast (Elems xs) = last xs
+  rLast :: RecList a -> RecList a
+  rLast (Elem x) = Elem x
+  rLast (Elems xs) = last xs
 
-  dShow :: (Show a) => RecList a -> String
-  dShow (Elem x) = show x
-  dShow (Elems xs) = "[" ++ intercalate "," (map dShow xs) ++ "]"
+  rShow :: (Show a) => RecList a -> String
+  rShow (Elem x) = show x
+  rShow (Elems xs) = "[" ++ intercalate "," (map rShow xs) ++ "]"
 
   argSig :: RecList String -> String
   argSig (Elem x) = x
