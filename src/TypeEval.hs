@@ -80,12 +80,12 @@ module TypeEval where
       Just (Fun types _ _ _) -> return types
       Just (Call name types) -> return types
       Just (TypeLit types) -> return types
-      Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found")
+      Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map rArrow args') ++ " -> ?' not found")
       otherwise -> throwError ("function not found. fun " ++ (show fun'))
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
     case unify (rInit ts) xs Map.empty of
-      Nothing -> throwError ((show $ lineOfCode code) ++ "ts:" ++ (show ts) ++ ",xs:" ++ (show xs) ++ ":fugafuga type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow args') ++ " -> ?' not found.")
+      Nothing -> throwError ((show $ lineOfCode code) ++ "ts:" ++ (show ts) ++ ",xs:" ++ (show xs) ++ ":fugafuga type mismatch. function '" ++ name ++ " : " ++ intercalate " -> " (map rArrow args') ++ " -> ?' not found.")
       --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (rLast ts) (Map.map (\e -> typeInst e typeEnv) typeEnv)
       Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
         in return $ typeInst (rLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
@@ -97,7 +97,7 @@ module TypeEval where
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
     case unify (rInit ts) xs Map.empty of
-      Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map dArrow args')
+      Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map rArrow args')
       --Just typeEnv -> return $ rLast types
       Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
         in return $ typeInst (rLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
@@ -123,7 +123,7 @@ module TypeEval where
     body' <- typeEval body env'
     case unify types (dAppend (rInit types) (Elems [body'])) Map.empty of
       Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env 
-      Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (rLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"
+      Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"
   typeEval (FunDefAnon types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
@@ -133,7 +133,7 @@ module TypeEval where
     case unify types (dAppend (rInit types) (Elems [body'])) Map.empty of      
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypeSig types
-      Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (rLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"    
+      Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"    
   typeEval (Case es matchPairs (Elems types')) env = do
     (Elems types) <- return $ generalizeTypeSig (Elems types')
     matchAll <- liftIO $ andM $ map ( \(args, body, guard) -> do

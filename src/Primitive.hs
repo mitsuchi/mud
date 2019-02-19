@@ -76,7 +76,7 @@ module Primitive where
   call "&&" [BoolLit b1, BoolLit b2] env _ = return $ BoolLit (b1 && b2)  
   call "||" [BoolLit b1, BoolLit b2] env _ = return $ BoolLit (b1 || b2)  
   call name args env c = do
-    throwError ((show $ lineOfCode c) ++ ":function '" ++ name ++ " : " ++ intercalate " -> " (map dArrow (map typeOf' args)) ++ " -> ?' not found")
+    throwError ((show $ lineOfCode c) ++ ":function '" ++ name ++ " : " ++ intercalate " -> " (map rArrow (map typeOf' args)) ++ " -> ?' not found")
 
   makeStruct :: [Expr] -> Map Name Expr -> Env -> IO Expr
   makeStruct [] m env = return $ StructValue m

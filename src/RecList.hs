@@ -21,16 +21,16 @@ module RecList where
 
   argSig :: RecList String -> String
   argSig (Elem x) = x
-  argSig (Elems xs) = (intercalate " -> " (map dArrow (init xs))) ++ " -> ?"
+  argSig (Elems xs) = (intercalate " -> " (map rArrow (init xs))) ++ " -> ?"
 
-  dArrow :: RecList String -> String
-  dArrow (Elem x) = x
-  dArrow (Elems [Elem "List", Elem e]) = "[" ++ e ++ "]"
-  dArrow (Elems xs) = "(" ++ intercalate " -> " (map dArrow xs) ++ ")"
+  rArrow :: RecList String -> String
+  rArrow (Elem x) = x
+  rArrow (Elems [Elem "List", Elem e]) = "[" ++ e ++ "]"
+  rArrow (Elems xs) = "(" ++ intercalate " -> " (map rArrow xs) ++ ")"
 
   listify :: RecList String -> [String]
   listify (Elem x) = [x]
-  listify (Elems xs) = map dArrow xs
+  listify (Elems xs) = map rArrow xs
 
   dAppend :: RecList a -> RecList a -> RecList a
   dAppend (Elem e) (Elems []) = Elems [Elem e]
