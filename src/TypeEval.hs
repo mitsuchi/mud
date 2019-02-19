@@ -117,7 +117,7 @@ module TypeEval where
   typeEval (FunDef nameExpr@(Var name code) types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
-    env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypeSig types))) varMap    
+    env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypes types))) varMap    
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
@@ -127,15 +127,15 @@ module TypeEval where
   typeEval (FunDefAnon types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
-    env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypeSig types))) varMap
+    env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypes types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
     case unify types (rAppend (rInit types) (Elems [body'])) Map.empty of      
       --Just env0 -> return $ types
-      Just env0 -> return $ generalizeTypeSig types
+      Just env0 -> return $ generalizeTypes types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"    
   typeEval (Case es matchPairs (Elems types')) env = do
-    (Elems types) <- return $ generalizeTypeSig (Elems types')
+    (Elems types) <- return $ generalizeTypes (Elems types')
     matchAll <- liftIO $ andM $ map ( \(args, body, guard) -> do
       (bool, typeEnv) <- matchCondType (init types) args guard Map.empty env
       bool' <- if bool then matchResultType body (last types) typeEnv env else return False

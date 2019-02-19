@@ -46,7 +46,7 @@ module Env where
     funs' <- case Map.lookup name env' of
       Nothing -> return []
       Just funs -> return funs
-    generalizedTypes <- return $ generalizeTypeSig types
+    generalizedTypes <- return $ generalizeTypes types
     writeIORef env (Map.insert name (if types == generalizedTypes then [(generalizedTypes, expr)] ++ funs' else funs' ++ [(generalizedTypes, expr)]) env')
     return env
 

@@ -20,8 +20,8 @@ module TypeUtil where
   hasVariable (Elem a) = isLower (a!!0)
   hasVariable (Elems xs) = or (Prelude.map isVariable xs)  
 
-  generalizeTypeSig :: RecList String -> RecList String
-  generalizeTypeSig list = gnrlize' list (makeMap (rFlatten list))
+  generalizeTypes :: RecList String -> RecList String
+  generalizeTypes list = gnrlize' list (makeMap (rFlatten list))
 
   gnrlize' :: RecList String -> Map String Int -> RecList String
   gnrlize' (Elem e) table = case Map.lookup e table of

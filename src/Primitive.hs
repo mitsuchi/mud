@@ -150,4 +150,4 @@ module Primitive where
     insertCall "||" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
 
   insertCall :: String -> RecList Type -> Env -> IO Env
-  insertCall name types env = insertFun' name types (Call name (generalizeTypeSig types)) env
+  insertCall name types env = insertFun' name types (Call name (generalizeTypes types)) env
