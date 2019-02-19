@@ -93,10 +93,6 @@ module Expr where
     (BoolLit b1) == (BoolLit b2) = b1 == b2
     e1 == e2 = trace (show (e1,e2)) $ False
 
-  -- showMembers :: Map String Expr -> String
-  -- showMembers Map.empty = ""
-  -- showMembers 
-
   typeOf' :: Expr -> RecList String
   typeOf' (IntLit i) = Elem "Int"
   typeOf' (StrLit s) = Elem "String"
