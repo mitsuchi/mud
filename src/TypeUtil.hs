@@ -7,29 +7,6 @@ module TypeUtil where
 
   type IOThrowsError = ExceptT String IO
 
-  findTypeEnv :: RecList String -> RecList String -> Map String (RecList String) -> Bool -> Maybe (Map String (RecList String))
-  --findTypeEnv (Elem a) (Elem b) env strict | (isUpper (a!!0) && isUpper (b!!0)) = Just env
-  findTypeEnv (Elem a) (Elem b) env strict | (not strict && isUpper (a!!0) && isUpper (b!!0) ) || strict =
-    if a == b then (Just env) else Nothing
-  findTypeEnv (Elem a) (Elem b) env strict | (not strict && isLower (b!!0) ) || strict =
-    Just env
-  findTypeEnv (Elem a) (Elems bs) env strict | (not strict && isUpper (a!!0) ) || strict = Nothing
-  findTypeEnv (Elem "_") (Elems bs) env strict = Nothing
-  findTypeEnv (Elem a) b env strict | (not strict && isLower (a!!0) ) || strict = 
-    let mapped = Map.lookup a env in
-    if mapped == Nothing then Just (Map.insert a b env)
-    else if mapped == Just b then Just env 
-    else Nothing
-  findTypeEnv (Elems as) (Elem b) env strict = Nothing
-  findTypeEnv (Elems []) (Elems bs) env strict = Just env
-  findTypeEnv (Elems as) (Elems []) env strict = Just env
-  --findTypeEnv (Elems (a:[])) (Elems (b:[])) env strict = Just env
-  findTypeEnv (Elems (a:as)) (Elems (b:bs)) env strict =
-    case findTypeEnv a b env strict of
-      Nothing -> Nothing
-      Just env' -> findTypeEnv (Elems as) (Elems bs) env' strict
-  findTypeEnv t1 t2 env strict = error ("findTypeEnv fail, t1 = " ++ (show t1) ++ ", t2 = " ++ (show t2))  
-
   isConcrete :: RecList String -> Bool
   isConcrete (Elem a) = (a == "List") || isUpper (a!!0)
   isConcrete (Elems xs) = and (Prelude.map isConcrete xs)
@@ -89,8 +66,7 @@ module TypeUtil where
   -- 引数
   -- 1. 関数の型のうち、返り値をのぞいた型のリスト。例：(a->b)->a->b なら [Elems [Elem "a", Elem "b"], Elem "a"]
   -- 2. 引数の型のリスト。例：[Elem "String", Elem "Int"]
-  -- あれそれって、findTypeEnv だな。でした。
-  -- でも別につくってみる。対応が矛盾する場合には Nothing を返す。あれば Just 型環境を返す（空かもしれない）
+  -- 対応が矛盾する場合には Nothing を返す。あれば Just 型環境を返す（空かもしれない）
   unify :: RecList String -> RecList String -> Map String (RecList String) -> Maybe (Map String (RecList String))
   unify a b env | isConcrete a && isConcrete b = 
     -- 両方とも具体型の場合は、一致するかどうかを見る

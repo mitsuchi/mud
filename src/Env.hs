@@ -72,9 +72,11 @@ module Env where
   firstMatch :: (Show a) => RecList String -> [(RecList String, a)] -> Bool -> Maybe a
   firstMatch types [] strict = Nothing
   firstMatch types ((types', expr):es) strict = 
-    case (if strict then findTypeEnv types' types Map.empty True else unify (dInit types') types Map.empty) of
-    Nothing -> firstMatch types es strict
-    Just env -> Just expr
+    if strict
+      then if types' == types then Just expr else firstMatch types es strict
+      else case unify (dInit types') types Map.empty of
+        Nothing -> firstMatch types es strict
+        Just env -> Just expr
 
   lastMatch :: (Show a) => RecList String -> [(RecList String, a)] -> Bool -> Maybe a
   lastMatch types funs strict = firstMatch types (reverse funs) strict

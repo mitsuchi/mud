@@ -89,13 +89,11 @@ module TypeEval where
       --Just typeEnv -> trace ("unify ts: " ++ (show ts) ++ ", xs: " ++ (show xs) ++ ", args: " ++ (show args')) $ return $ typeInst (dLast ts) (Map.map (\e -> typeInst e typeEnv) typeEnv)
       Just typeEnv -> let env1 = Map.map (\e -> typeInst e typeEnv) typeEnv
         in return $ typeInst (dLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
-    --typeEnv <- return $ findTypeEnv (dInit types) (Elems args') Map.empty False      
     -- case typeEnv of
     --   Just tenv -> return $ typeInst (dLast types) tenv
     --   Nothing -> throwError ((show $ lineOfCode code) ++ ":type mismatch. can not apply function")
   typeEval (Apply (TypeLit types) args) env = do
     args' <- mapM (\arg -> typeEval arg env) args
-    --case findTypeEnv types (Elems args') Map.empty False of
     ts <- return $ generalizeTypesWith "t" types
     xs <- return $ generalizeTypesWith "x" (Elems args')
     case unify (dInit ts) xs Map.empty of
@@ -123,7 +121,6 @@ module TypeEval where
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
-    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) Map.empty False of
     case unify types (dAppend (dInit types) (Elems [body'])) Map.empty of
       Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env 
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ dArrow (dLast types) ++ "', but actually returns '" ++ dArrow body' ++ "'"
@@ -133,7 +130,6 @@ module TypeEval where
     env' <- liftIO $ newEnv params (map TypeLit (dArgs (generalizeTypeSig types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
-    --case findTypeEnv types (dAppend (dInit types) (Elems [body'])) Map.empty False of
     case unify types (dAppend (dInit types) (Elems [body'])) Map.empty of      
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypeSig types
@@ -181,7 +177,6 @@ module TypeEval where
     --trace ("bodyType: " ++ (show bodyType) ++ ", types: " ++ (show types)) $ return True
     case bodyType of
       Left error -> return False
-      --Right bodyType' -> case findTypeEnv types bodyType' typeEnv False of
       Right bodyType' -> case unify types bodyType' typeEnv of
         Just env0 -> return True
         Nothing -> return False
