@@ -225,7 +225,7 @@ module TypeEval where
     matchCondType e1s e2s guard vmap2 env
   matchCondType (e1:e1s) (e2:e2s) guard varMap env =
     -- 一般の場合：型としてマッチすればOK (Int vs Int, a vs String など)    
-    case findTypeEnv e1 (typeOf' e2) varMap False of
+    case unify e1 (typeOf' e2) varMap of
       Just varMap' -> matchCondType e1s e2s guard varMap' env
       Nothing -> return (False, Map.empty)
   matchCondType [] [] guard varMap env = case guard of
