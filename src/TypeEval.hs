@@ -121,7 +121,7 @@ module TypeEval where
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
-    case unify types (dAppend (rInit types) (Elems [body'])) Map.empty of
+    case unify types (rAppend (rInit types) (Elems [body'])) Map.empty of
       Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env 
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"
   typeEval (FunDefAnon types params body) env = do
@@ -130,7 +130,7 @@ module TypeEval where
     env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypeSig types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
-    case unify types (dAppend (rInit types) (Elems [body'])) Map.empty of      
+    case unify types (rAppend (rInit types) (Elems [body'])) Map.empty of      
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypeSig types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"    

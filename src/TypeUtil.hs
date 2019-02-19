@@ -21,7 +21,7 @@ module TypeUtil where
   hasVariable (Elems xs) = or (Prelude.map isVariable xs)  
 
   generalizeTypeSig :: RecList String -> RecList String
-  generalizeTypeSig list = gnrlize' list (makeMap (dFlatten list))
+  generalizeTypeSig list = gnrlize' list (makeMap (rFlatten list))
 
   gnrlize' :: RecList String -> Map String Int -> RecList String
   gnrlize' (Elem e) table = case Map.lookup e table of
@@ -50,7 +50,7 @@ module TypeUtil where
   typeDefToTypes es name = Elems ((foldMap ((++) . (\(Elems x) -> x) . snd) es []) ++ [Elem name])
 
   generalizeTypesWith :: String -> RecList String -> RecList String
-  generalizeTypesWith str list = gnrlizeWith str list (makeMap (dFlatten list))
+  generalizeTypesWith str list = gnrlizeWith str list (makeMap (rFlatten list))
 
   gnrlizeWith :: String -> RecList String -> Map String Int -> RecList String
   gnrlizeWith str (Elem e) table = case Map.lookup e table of

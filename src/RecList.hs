@@ -32,15 +32,15 @@ module RecList where
   listify (Elem x) = [x]
   listify (Elems xs) = map rArrow xs
 
-  dAppend :: RecList a -> RecList a -> RecList a
-  dAppend (Elem e) (Elems []) = Elems [Elem e]
-  dAppend (Elem e) (Elems es) = Elems ((Elem e):es)
-  dAppend (Elems es1) (Elems es2) = Elems (es1++es2)
+  rAppend :: RecList a -> RecList a -> RecList a
+  rAppend (Elem e) (Elems []) = Elems [Elem e]
+  rAppend (Elem e) (Elems es) = Elems ((Elem e):es)
+  rAppend (Elems es1) (Elems es2) = Elems (es1++es2)
 
-  dFlatten :: RecList a -> [a]
-  dFlatten (Elem e) = [e]
-  dFlatten (Elems []) = []
-  dFlatten (Elems (e:es)) = (dFlatten e) ++ (dFlatten (Elems es))
+  rFlatten :: RecList a -> [a]
+  rFlatten (Elem e) = [e]
+  rFlatten (Elems []) = []
+  rFlatten (Elems (e:es)) = (rFlatten e) ++ (rFlatten (Elems es))
 
   instance (Eq a) => Eq (RecList a) where
     (Elem x) == (Elem y) = (x == y)
