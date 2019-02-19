@@ -3,9 +3,9 @@ module RecList where
 
   data RecList a = Elem a | Elems [RecList a] deriving Show
 
-  dArgs :: RecList a -> [RecList a]
-  dArgs (Elem x) = [Elem x]
-  dArgs (Elems xs) = init xs
+  rArgs :: RecList a -> [RecList a]
+  rArgs (Elem x) = [Elem x]
+  rArgs (Elems xs) = init xs
 
   dInit :: RecList a -> RecList a
   dInit (Elem x) = Elem x

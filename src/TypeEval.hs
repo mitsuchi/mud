@@ -117,7 +117,7 @@ module TypeEval where
   typeEval (FunDef nameExpr@(Var name code) types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
-    env' <- liftIO $ newEnv params (map TypeLit (dArgs (generalizeTypeSig types))) varMap    
+    env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypeSig types))) varMap    
     -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
     res <- liftIO $ insertFun name types (Fun types params body env) env'
     body' <- typeEval body env'
@@ -127,7 +127,7 @@ module TypeEval where
   typeEval (FunDefAnon types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
-    env' <- liftIO $ newEnv params (map TypeLit (dArgs (generalizeTypeSig types))) varMap
+    env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypeSig types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
     case unify types (dAppend (dInit types) (Elems [body'])) Map.empty of      
