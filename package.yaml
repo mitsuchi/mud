@@ -1,10 +1,10 @@
 name:                mud
 version:             0.1.0.0
-github:              "githubuser/mud"
+github:              "mitsuchi/mud"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2019 Author name here"
+author:              "Tatsuo Mitsuchi"
+maintainer:          "t.mitsuchi3@gmail.com"
+copyright:           "2019 Tatsuo Mitsuchi"
 
 extra-source-files:
 - README.md
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/mud#readme>
+description:         Please see the README on GitHub at <https://github.com/mitsuchi/mud#readme>
 
 dependencies:
 - base >= 4.7 && < 5
