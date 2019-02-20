@@ -74,10 +74,14 @@ map [1,2,3] double  #=> [2,4,6]
 
 # 同じ関数名でも引数の型によって異なる関数が呼び出される
 fun incr : Int -> Int = x -> x + 1
-fun incr : String -> String = x -> x + ' one'
+fun incr : String -> String = {
+  'zero' -> 'one'
+  'one' -> 'two'
+  'two' -> 'three'
+}
 
 incr 2       #=> 3
-incr 'hello' #=> "hello one"
+incr 'two'   #=> 'three'
 
 # 多重ディスパッチ
 # （＝引数が複数ある場合、すべての引数の型の組み合わせごとに異なる関数が定義できる）
@@ -93,12 +97,23 @@ fun * : [Int] -> [Int] -> Int = {
   [] ys  -> 0
   [x;xs] [y;ys] -> x * y + xs * ys
 }
-[1,2,3] * [4,5,6]    #=> 32
+[1,2,3] * [4,5,6]    #=> 32 (=1*4+2*5+3*6)
 
 # 匿名関数
 (x -> x + 1 : Int -> Int) 1  #=> 2
 [1,2,3].map (x -> x * 4 : Int -> Int)  #=> [4,8,12]
   
+# 匿名関数の型を省略する。
+# 以下の場合 (x -> x + x : a -> b) のように最も一般的な型とみなされる。
+[1,2,3].map (x -> x + x)   #=> [2,4,6]
+
+# 通常の関数の型を省略する。
+# 同様に triple : a -> b とみなされる。
+# ある意味、漸進的な型付け
+fun triple = x -> x * 3
+triple 10 #=> 30
+triple "a" #=> "aaa"
+
 # リストのソート
 fun select : [a] -> (a -> Bool) -> [a] = {
   []     f -> []
@@ -109,9 +124,9 @@ fun select : [a] -> (a -> Bool) -> [a] = {
 
 fun qsort : [a] -> [a] = {
     []    -> []
-    [e;es] -> es.select (x -> x < e : a -> Bool).qsort +
-      ([e]+es).select (x -> x == e : a -> Bool) + 
-      es.select (x -> x > e : a -> Bool).qsort
+    [e;es] -> es.select (x -> x < e).qsort +
+      ([e]+es).select (x -> x == e) + 
+      es.select (x -> x > e).qsort
 }
 
 [2,5,1,2,4,3].qsort    #=> [1,2,2,3,4,5]
@@ -140,7 +155,7 @@ if False then 1 else 2             #=> 2
 # 高階関数
 fun twice : (Int->Int) -> (Int->Int) = f -> (x -> f (f x) : Int->Int)
 fun inc : Int -> Int = x -> x + 1
-(twice (twice (twice inc))) 0  #=> 8
+(twice (twice (twice inc))) 0  #=> 8  (0->1->2->4->8)
 (inc.twice.twice.twice) 0      #=> 8
 
 # 関数合成（ユーザー定義）
@@ -151,7 +166,7 @@ fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c)
 # パラメトリック多相
 fun id : a -> a = x -> x
 id 1     #=> 1
-id 'one' #=> "one"
+id 'one' #=> 'one'
 
 # 関数に引数を適用するだけの関数 apply
 fun apply : (a->a) -> a -> a = f x -> f x
@@ -196,16 +211,6 @@ fun fizzbuzz : Int -> String = {
   a | 3.divide? a| -> "fizz"
   a                -> a.to_s
 }
-
-# 匿名関数の型を省略する。
-# 以下の場合 (x -> x + x : a -> b) のように最も一般的な型とみなされる。
-[1,2,3].map (x -> x + x)   #=> [2,4,6]
-
-# 通常の関数の型を省略する。
-# 同様に triple : a -> b とみなされる。
-fun triple = x -> x * 3
-triple 10 #=> 30
-triple "a" #=> "aaa"
 
 # なるべく楽して関数を定義する
 double' = x -> x + x
