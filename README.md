@@ -1,4 +1,4 @@
-# Mud : 多重ディスパッチを基礎とするプログラミング言語
+# Mud : 多重ディスパッチをベースとするプログラミング言語
 
 Mud は以下の特徴を持つプログラミング言語です。
 
@@ -10,206 +10,207 @@ Mud は以下の特徴を持つプログラミング言語です。
 * "."演算子によるオブジェクト指向っぽい見た目
 * ある意味、漸進的な型付け
 
-## 使い方
+## 特徴
 
-``stack build && stack install``
-
-を実行すると ~/.local/bin/ に mud コマンドがインストールされますので、~/.local/bin/ を実行パスに追加してください。
-
-## Hello, World! プログラム
-
-コンソールに Hello, World! と表示するプログラムは次のとおりです。
+この言語の特徴を、以下にサンプルプログラムとしてまとめます。詳しい説明や使い方については Tutorial.md をご覧ください。
 
 ```
-puts "Hello, World!"
-```
+# hello, world!
+puts "hello, world!"
 
-これだけです。import や main などを書く必要はありません。実行するためには、この内容を hello.mud としてファイルに保存し、以下のコマンドを走らせます。
+# 算術
+1+2      #=> 3
+1+2*3    #=> 7
+(1+2)*3  #=> 9
+  
+# 関数定義：1変数
+fun double : Int -> Int = x -> x * 2
 
-```
-% mud run hello.mud
-Hello, World!
-```
+# 関数適用
+double 10  #=> 20
 
-## 四則演算
-
-単純な計算は次のように書くことができます。
-
-```
-(1+2)*3   #=> 9
-2*3.3     #=> 6.6
-```
-
-上の例の #=> は、左側を評価した結果が右側になるという意味になります。
-
-詳しくいうと、9 は Intという型を持つ整数で、6.6 は Doubleという型を持つ倍精度浮動小数点数になります。
-
-上の計算をするために内容をファイルに保存して実行してもいいのですが、この場合には REPLを使うとより簡単です。
-
-```
-% mud repl
-> (1+2)*3
-9
-> 
-```
-
-mud repl を実行すると、一般に REPL (read-eval-print loop) と呼ばれるモードに入ります。
-
-プロンプト(>)の後に式を入力すると、すぐ次の行に結果が表示され、その繰り返しになります。REPLを抜けるには quit と入力してください。
-
-## 変数
-
-変数の使い方は次のとおりです。
-
-```
-> a=1
-1
-> b=2
-2
-> a+b
-3
-```
-
-未定義の変数を参照することはできません。
-
-```
-> c
-1:variable 'c' not found.
-```
-
-また、一度定義した変数を再び定義することはできません。
-
-```
-> a=1
-1
-> a=2
-1:variable 'a' already exists
-```
-
-変数名には以下のような文字を使うことができます。とくに、変数名の最後に ? や ! を使うことができます。
-
-```
-find_devisor
-prime?
-```
-
-## 関数
-
-整数を2倍にするような単純な関数を考えます。これを double と呼ぶことにすると、その定義は次のように書けます。
-
-```
-fun double : Int -> Int = {
-  x -> x + x
-}
-```
-
-意味は次のとおりです。「関数 double の型は Int -> Int (整数を受け取って整数を返す) であり、その本体は引数 x を受け取って x + x を返すものである。」
-
-この関数をつかって 10 を2倍にするにはこう書きます。
-
-```
-> double 10
-20
-```
-
-関数名の後にカッコは必要ありません。
-
-引数が2つの場合の例として、2つの整数を受け取ってそれらを足すだけの関数 add を考えます。
-
-```
-fun add : Int -> Int -> Int = {
-  x y -> x + y
-}
-```
-使い方はこうなります。
-```
-> add 10 20
-30
-```
-add の型 Int -> Int -> Int は、引数としてInt と Int を受け取り、Int を返すという意味になります。
-
-
-## 関数のシンプルな記法
-
-double や add のように簡単な関数は、次のように一行で書くこともできます。
-
-```
-fun double : Int -> Int = x -> x + x
+# 関数定義；2変数
 fun add : Int -> Int -> Int = x y -> x + y
-```
 
-さらに関数の型も省略できます（詳しくは後述）。
-```
-fun double = x -> x + x
-fun add = x y -> x + y
-```
-なおかつ fun も省略できます（後述）。
-```
-double = x -> x + x
-add = x y -> x + y
-```
-シンプルでしょう。
+# 関数適用
+add 10 20  #=> 30
 
-## パターンマッチ
+# . 演算子は、関数適用の関数と第一引数をひっくりかえす
+10.double  #=> double 10 と等価、つまり 20
+10.add 20  #=> add 10 20 と等価、つまり 30
+10.add 20.double  #=> double (add 10 20) と等価、つまり 60
+  
+# 変数
+a=10
+b=20
+a+b  #=> 30
 
-関数の定義では、<- の左辺にパターンマッチを使うことができます。たとえば、1からnまでを掛け合わせた数を計算する関数 fact は、次のように定義できます。
+# パターンマッチ、再帰的定義
+# 1 + 2 + .. + n を計算する関数
+fun sum : Int -> Int = {
+    1 -> 1
+    n -> n + sum (n-1)
+}
+sum 5   #=> 15
 
-```
-fun fact : Int -> Int = {
-  1 -> 1
-  n -> n * fact (n-1)
+# 1 * 2 * .. * n を計算する関数
+fun factorial : Int -> Int = {
+    1 -> 1
+    n -> n * (factorial (n-1))
+}
+factorial 5   #=> 120
+
+# リスト
+[1,2,3] + [4,5]   #=> [1,2,3,4,5]
+
+# リスト上の写像
+fun map : [a] -> (a->b) -> [b] = {
+  []     f -> []
+  [e;es] f -> [f e] + map es f
 }
 
-fact 5   #=> 120 (=1*2*3*4*5)
-```
+map [1,2,3] double  #=> [2,4,6]
+[1,2,3].map double  #=> [2,4,6] 
 
-fact の定義は、引数のパターンごとに本体を場合分けしたものと考えることができます。
+# 同じ関数名でも引数の型によって異なる関数が呼び出される
+fun incr : Int -> Int = x -> x + 1
+fun incr : String -> String = x -> x + ' one'
 
-つまり、1 -> 1 の行から fact 1 は 1 になります。fact 2 は、次の行に n=2 としてマッチし、2 * fact 1 が評価されます。fact 1 は 1 となり、結局 fact 2 は 2 となります。
+incr 2       #=> 3
+incr 'hello' #=> "hello one"
 
-このようにパターンは上から順にテストされ、最初にマッチした行の右辺が実行されます。
+# 多重ディスパッチ
+# （＝引数が複数ある場合、すべての引数の型の組み合わせごとに異なる関数が定義できる）
+# ベクトルの定数倍
+fun * : [Int] -> Int -> [Int] = {
+  xs y -> xs.map (a -> a * y)
+}
+[1,2,3] * 3    #=> [3,6,9]
 
-## "."演算子によるオブジェクト指向っぽい見た目
+# ベクトルの内積
+fun * : [Int] -> [Int] -> Int = {
+  xs []  -> 0
+  [] ys  -> 0
+  [x;xs] [y;ys] -> x * y + xs * ys
+}
+[1,2,3] * [4,5,6]    #=> 32
 
-整数に1を足したものを返す関数 inc を考えます。
-```
-fun inc : Int -> Int = {
-  x -> x + 1
+# 匿名関数
+(x -> x + 1 : Int -> Int) 1  #=> 2
+[1,2,3].map (x -> x * 4 : Int -> Int)  #=> [4,8,12]
+  
+# リストのソート
+fun select : [a] -> (a -> Bool) -> [a] = {
+  []     f -> []
+  [e;es] f -> if (e.f)
+    then ([e] + select es f)
+    else (select es f)
 }
 
-inc 10   #=> 11
+fun qsort : [a] -> [a] = {
+    []    -> []
+    [e;es] -> es.select (x -> x < e : a -> Bool).qsort +
+      ([e]+es).select (x -> x == e : a -> Bool) + 
+      es.select (x -> x > e : a -> Bool).qsort
+}
+
+[2,5,1,2,4,3].qsort    #=> [1,2,2,3,4,5]
+
+# 新しい演算子を定義
+fun ** : Int -> Int -> Int = {
+    a 0 -> 1
+    a b -> (a ** (b-1)) * a
+}
+2 ** 10  #=> 1024
+
+# 新しい型を定義
+type Complex = { r:Int, i:Int }
+
+fun + : Complex -> Complex -> Complex = a b -> Complex (a.r+b.r) (a.i+b.i)
+fun - : Complex -> Complex -> Complex = a b -> Complex (a.r-b.r) (a.i-b.i)
+fun * : Complex -> Complex -> Complex = a b -> Complex (a.r*b.r-a.i*b.i) (a.r*b.i+a.i*b.r)
+Complex 1 2 + Complex 3 4  #=> Complex 4 6
+
+# if文
+if 1 == 2 then 3 else 4            #=> 4
+if 1 == 1 && 2 == 3 then 4 else 5  #=> 5
+if True then 1 else 2              #=> 1
+if False then 1 else 2             #=> 2
+
+# 高階関数
+fun twice : (Int->Int) -> (Int->Int) = f -> (x -> f (f x) : Int->Int)
+fun inc : Int -> Int = x -> x + 1
+(twice (twice (twice inc))) 0  #=> 8
+(inc.twice.twice.twice) 0      #=> 8
+
+# 関数合成（ユーザー定義）
+fun * : (b->c) -> (a->b) -> (a->c) = f g -> (x -> x.g.f : a -> c)
+(double * double * inc) 10 #=> 44
+10.inc.double.double       #=> 44
+
+# パラメトリック多相
+fun id : a -> a = x -> x
+id 1     #=> 1
+id 'one' #=> "one"
+
+# 関数に引数を適用するだけの関数 apply
+fun apply : (a->a) -> a -> a = f x -> f x
+apply inc 0 #=> 1
+
+# 関数名の末尾に ? を使う
+fun even? : Int -> Bool = x -> x/2*2 == x
+even? 8 #=> True
+even? 9 #=> False
+
+# 関数名、変数名の途中と末尾に _ を使う
+fun to_s : Complex -> String = {
+  c -> c.r.to_s + "+" + c.i.to_s + "i"
+}
+(Complex 1 2).to_s #=> "1+2i"
+
+# 関数名、変数名の末尾に ' を使う
+a' = a + 2 #=> 3
+
+# 多相型を含む同名の関数が複数ある場合、より具体的なほうがマッチする
+fun add' : String -> String -> String = x y -> x + " " + y
+fun add' : a -> a -> a = x y -> x + y
+
+add' "hello" "world" #=> "hello world"
+add' 1 2 #=> 3
+
+# パターンマッチに条件をつける
+fun abs : Int -> Int = {
+  a |a<0| -> -a
+  a       -> a
+}
+abs (-3)  #=> 3
+abs 3     #=> 3
+
+# 条件つきパターンマッチを使った fizzbuzz の例
+fun divide? : Int -> Int -> Bool = {
+  a b -> (b/a)*a == b
+}
+fun fizzbuzz : Int -> String = {
+  a |15.divide? a| -> "fizzbuzz"
+  a | 5.divide? a| -> "buzz"
+  a | 3.divide? a| -> "fizz"
+  a                -> a.to_s
+}
+
+# 匿名関数の型を省略する。
+# 以下の場合 (x -> x + x : a -> b) のように最も一般的な型とみなされる。
+[1,2,3].map (x -> x + x)   #=> [2,4,6]
+
+# 通常の関数の型を省略する。
+# 同様に triple : a -> b とみなされる。
+fun triple = x -> x * 3
+triple 10 #=> 30
+triple "a" #=> "aaa"
+
+# なるべく楽して関数を定義する
+double' = x -> x + x
+double' 10    #=> 20
+
+double'' = x -> x + " " + x : String -> String
+double'' "hoge"   #=> "hoge hoge"
 ```
-
-このようなとき、"." 演算子を使って inc 10 を次のように書くことができます。
-```
-10.inc   #=> 11
-```
-inc 10 と 10.inc は完全に同じものであり、つまり "." によって関数の第1引数と関数名の順序を交換することができます。
-
-この記法は、次のように関数の適用が深くなった場合により効果的です。
-
-いま、sort をリストをソートする関数、uniq をリストの重複を除く関数、reverse をリストを逆順にする関数として、次の式を考えます。
-
-```
-reverse (uniq (sort [2,4,2,1]))
-#=> [4,2,1]
-```
-
-この式は、リスト [2,4,2,1] をソートし、重複を取り除き、逆順にしたものを表します。しかし、その意味をとるためには、式を「右から左に」読まなければいけません。
-
-"."演算子を使えば、この式は次のように書けます。
-
-```
-[2,4,2,1].sort.uniq.reverse
-```
-左から右へ、自然な順で読みやすくなりました。
-
-## 多重ディスパッチ
-
-関数は、同じ名前でも、引数の型の組み合わせごとに異なるように定義できます。
-
-たとえば、
-
-
-
-関数が呼ばれた際には、引数の型を見た上でどの定義を呼び出すかが決まります。このような仕組みを多重ディスパッチ(multiple dispatch)といいます。
