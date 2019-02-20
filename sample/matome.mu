@@ -57,10 +57,14 @@ map [1,2,3] double  #=> [2,4,6]
 
 # 同じ関数名でも引数の型によって異なる関数が呼び出される
 fun incr : Int -> Int = x -> x + 1
-fun incr : String -> String = x -> x + ' one'
+fun incr : String -> String = {
+  'zero' -> 'one'
+  'one' -> 'two'
+  'two' -> 'three'
+}
 
 incr 2       #=> 3
-incr 'hello' #=> "hello one"
+incr 'two'   #=> 'three'
 
 # 多重ディスパッチ
 # （＝引数が複数ある場合、すべての引数の型の組み合わせごとに異なる関数が定義できる）
