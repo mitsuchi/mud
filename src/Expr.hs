@@ -1,3 +1,4 @@
+-- 式
 module Expr where
 
   import Data.Char
@@ -106,6 +107,8 @@ module Expr where
     Just (StrLit str) -> Elem str
     Nothing           -> error "type not defined in struct value"
 
+  -- パターンマッチの元になる式と、マッチさせる対象のリストから、変数または関数とそれに対する式のリストの組を返す
+  -- 例: a 2 [e;es] に 10 2 [1,2,3] をマッチさせる場合、(["a", "e", "es"], [IntLit 10, IntLit 1, ListLit [2,3]]) を返す
   paramsAndArgs :: [Expr] -> [Expr] -> ([String], [Expr])
   paramsAndArgs [] [] = ([],[])
   paramsAndArgs ((Var v _):e1s) (e:e2s) = let rests = paramsAndArgs e1s e2s

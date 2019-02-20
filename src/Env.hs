@@ -1,3 +1,4 @@
+-- 環境
 module Env where
 
   import Data.IORef
@@ -6,14 +7,18 @@ module Env where
   import RecList
   import TypeUtil
 
+
   type GeneralEnv a = IORef (Map String [(RecList String, a)])
 
+  -- 与えられた名前の変数を探す
   lookupVar :: (Show a) => String -> GeneralEnv a -> IO (Maybe a)
   lookupVar name env = lookupVar' name env False
 
+  -- 与えられた名前の変数を探す。ただし変数として名前がなくても関数として一つだけあるならそれを返す
   lookupVarLoose :: (Show a) => String -> GeneralEnv a -> IO (Maybe a)
   lookupVarLoose name env = lookupVar' name env True
 
+  -- 与えられた名前の変数を探す。上2つを統合した関数。
   lookupVar' :: (Show a) => String -> GeneralEnv a -> Bool -> IO (Maybe a)
   lookupVar' name env loose = do
     env' <- readIORef env
@@ -50,6 +55,7 @@ module Env where
     writeIORef env (Map.insert name (if types == generalizedTypes then [(generalizedTypes, expr)] ++ funs' else funs' ++ [(generalizedTypes, expr)]) env')
     return env
 
+  -- 与えられた名前と引数の型を持つ関数が存在するか？
   funExists :: (Show a) => String -> RecList String -> GeneralEnv a -> IO Bool
   funExists name types env = do
     fun <- lookupFun name types env True
@@ -58,7 +64,7 @@ module Env where
       Just expr -> return $ True
 
   
-  -- 
+  -- 与えられた名前と引数の型を持つ関数を探す
   lookupFun :: (Show a) => String -> RecList String -> GeneralEnv a -> Bool -> IO (Maybe a)
   lookupFun name types env strict = do
     --trace ("lookupFun: name=" ++ name) $ return True
@@ -69,6 +75,7 @@ module Env where
         then lastMatch (generalizeTypesWith "x" types) funs strict
         else firstMatch (generalizeTypesWith "x" types) funs strict
 
+  -- 環境を先頭から（具体型を持つほうから）探して、最初にマッチした関数を返す
   firstMatch :: (Show a) => RecList String -> [(RecList String, a)] -> Bool -> Maybe a
   firstMatch types [] strict = Nothing
   firstMatch types ((types', expr):es) strict = 
@@ -78,6 +85,7 @@ module Env where
         Nothing -> firstMatch types es strict
         Just env -> Just expr
 
+  -- 環境を後ろから（抽象型を持つほうから）探して、最初にマッチした関数を返す        
   lastMatch :: (Show a) => RecList String -> [(RecList String, a)] -> Bool -> Maybe a
   lastMatch types funs strict = firstMatch types (reverse funs) strict
 
@@ -91,6 +99,7 @@ module Env where
       then insertVarForce name expr env
       else return $ Left ("variable '" ++ name ++ "' already exists")
 
+  -- 変数を環境に強制的に登録する
   insertVarForce :: String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
   insertVarForce name expr env = do
     env' <- readIORef env
@@ -100,6 +109,7 @@ module Env where
     writeIORef env (Map.insert name ([(Elem "_", expr)] ++ funs') env')
     return $ Right env
 
+  -- 与えられた名前を持つ変数が存在するか？
   varExists :: (Show a) => String -> GeneralEnv a -> IO Bool
   varExists name env = do
     exists <- lookupVar name env
@@ -107,6 +117,7 @@ module Env where
       Nothing -> return False
       otherwise -> return True
 
+  -- 与えられた名前の変数、または関数が存在するか？
   anyExists :: String -> GeneralEnv a -> IO Bool
   anyExists name env = do
     env' <- readIORef env
@@ -114,8 +125,8 @@ module Env where
       Nothing -> return False
       Just vars -> return True
 
+  -- 環境の中身を表示する
   showEnv :: (Show a) => GeneralEnv a -> IO ()
   showEnv env = do
     env' <- readIORef env
     print env'
-

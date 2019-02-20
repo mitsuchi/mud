@@ -1,3 +1,4 @@
+-- 四則演算など原始的な関数群を定義
 module Primitive where
 
   import Control.Monad.Except
@@ -10,6 +11,7 @@ module Primitive where
   import Expr
   import TypeUtil
   
+  -- プリミティブな関数を評価する
   call :: Name -> [Expr] -> Env -> Code -> ExceptT String IO Expr
   call "head" [ListLit (e:es) _] env _ = return e
   call "tail" [ListLit (e:es) c] env _ = return $ ListLit es c
@@ -78,6 +80,7 @@ module Primitive where
   call name args env c = do
     throwError ((show $ lineOfCode c) ++ ":function '" ++ name ++ " : " ++ intercalate " -> " (map rArrow (map typeOf' args)) ++ " -> ?' not found")
 
+  -- ユーザー定義型を表す構造体を作る
   makeStruct :: [Expr] -> Map Name Expr -> Env -> IO Expr
   makeStruct [] m env = return $ StructValue m
   makeStruct (StrLit name : es) m env = do
@@ -86,7 +89,7 @@ module Primitive where
       Just expr -> makeStruct es (Map.insert name expr m) env
       Nothing -> error "can't find struct member"
 
-
+  -- プリミティブな関数を環境に登録する
   insertPrimitives :: Env -> IO Env
   insertPrimitives env = do
     insertCall "puts" (Elems [Elem "a", Elem "String"]) env    
@@ -149,5 +152,6 @@ module Primitive where
     insertCall "&&" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
     insertCall "||" (Elems [Elem "Bool", Elem "Bool", Elem "Bool"]) env
 
+  -- 関数を環境に登録する
   insertCall :: String -> RecList Type -> Env -> IO Env
   insertCall name types env = insertFun' name types (Call name (generalizeTypes types)) env

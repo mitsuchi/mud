@@ -1,3 +1,4 @@
+-- 式の評価
 module Eval where
 
   import Control.Monad (forM_)
@@ -9,10 +10,12 @@ module Eval where
 
   import Expr
   import Env
+  import EvalUtil
   import RecList
   import Primitive
   import TypeUtil
 
+  -- 与えられた環境の元で式を評価する
   eval :: Expr -> Env -> IOThrowsError Expr
   eval (IntLit i) env = return $ IntLit i
   eval (StrLit s) env = return $ StrLit s
@@ -102,24 +105,14 @@ module Eval where
           params = map fst typeDef
   eval value@(StructValue structValue) env = return value
 
-  -- 空の環境で式を評価する
+  -- プリミティブな関数だけを登録した環境で式を評価する
   evalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
   evalWithPrimitiveEnv expr = do
     env <- liftIO $ newIORef Map.empty
     liftIO $ insertPrimitives env
     eval expr env
-      
-  newEnv :: [String] -> [Expr] -> (Map String [(RecList String, Expr)]) -> IO Env
-  newEnv params args outerEnv = do
-    env <- newIORef outerEnv
-    mapM_ (\p -> insertAny p env) (zip params args)
-    return env
 
-  insertAny :: (String, Expr) -> Env -> IO (Either String Env)
-  insertAny (name, expr) env = case expr of
-    (Fun types _ _ _) -> insertFun name types expr env
-    otherwise         -> insertVarForce name expr env
-
+  -- パターンマッチが成功するか？
   matchCond :: [Expr] -> [Expr] -> Maybe Expr -> (Map String Expr) -> Env -> IO Bool
   matchCond (IntLit i:e1s) (IntLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
   matchCond (DoubleLit i:e1s) (DoubleLit j:e2s) guard varMap env = if i == j then matchCond e1s e2s guard varMap env else return False
@@ -142,10 +135,3 @@ module Eval where
         Right val -> return $ val == (BoolLit True)
         Left error -> trace error $ return False
   matchCond e1 e2 _ varMap env = trace ("matchCond: " ++ show (e1,e2)) $ return False
-
-  findM :: Monad m => (a -> m Bool) -> [a] -> m (Maybe a)
-  findM p [] = return Nothing
-  findM p (x:xs) = ifM (p x) (return $ Just x) (findM p xs)
-
-  ifM :: Monad m => m Bool -> m a -> m a -> m a
-  ifM b t f = do b <- b; if b then t else f

@@ -1,3 +1,4 @@
+-- 字句解析と構文解析
 module Parse where
 
   import Control.Monad (void)
@@ -13,6 +14,7 @@ module Parse where
 
   type Parser = Parsec Void String
 
+  -- space consumer 。空白やコメントをスキップする。改行はスキップしない。
   sc :: Parser ()
   sc = L.space spaceOrTab1 lineCmnt blockCmnt
     where
@@ -20,6 +22,7 @@ module Parse where
       lineCmnt  = L.skipLineComment "#"
       blockCmnt = L.skipBlockComment "/*" "*/"
 
+  -- 改行を含む空白やコメントをスキップする
   scn :: Parser ()
   scn = L.space space1 lineCmnt blockCmnt
     where
@@ -29,21 +32,27 @@ module Parse where
   lexeme :: Parser a -> Parser a
   lexeme = L.lexeme sc
   
+  -- 整数を読む
   integer :: Parser Integer
   integer = lexeme L.decimal
   
+  -- 浮動小数点数を読む
   double :: Parser Double
   double = lexeme L.float
 
+  -- 演算子を読む
   operator :: Parser String
   operator = lexeme $ some (oneOf "+-*/><")
 
+  -- 予約語を読む
   rword :: String -> Parser ()
   rword w = (lexeme . try) (space >> string w *> notFollowedBy alphaNumChar)
   
+  -- 予約語のリスト
   reservedWords :: [String] -- list of reserved words
   reservedWords = ["fun","if","then","else","type"]
   
+  -- 識別子を読む
   identifier :: Parser String
   identifier = (lexeme . try) (identifier' >>= check)
     where
@@ -58,13 +67,15 @@ module Parse where
     lastLetters <- many (oneOf "!?_'")
     return $ firstLetter : (middleLetters ++ lastLetters)
 
-
+  -- 与えられた文字列を読む。後ろの空白（改行を含む）をスキップする。
   symbol :: String -> Parser String
   symbol s = (L.symbol scn s)
 
+  -- 与えられた文字列を読む。後ろの空白（改行を含まない）をスキップする。
   symboln :: String -> Parser String
   symboln s = (L.symbol sc s)  
 
+  -- 演算子とその処理。リストの先頭のほうが優先順位が高い。
   ops :: [[Operator Parser Expr]]
   ops =
     [ 
@@ -86,9 +97,11 @@ module Parse where
     , [ InfixR (BinOp Eq <$> (symbol "=" *> getCode)) ]
     ]
   
+  -- 式を読む
   expr :: Parser Expr
   expr = makeExprParser term ops
   
+  -- 項を読む。項は演算子の引数になるもの。
   term :: Parser Expr
   term = try anonFun
     <|> try apply
@@ -98,6 +111,7 @@ module Parse where
     <|> fundef
     <|> typeDef
   
+  -- 関数の引数になりうるものを読む
   arg :: Parser Expr
   arg = try (DoubleLit <$> double)
     <|> IntLit <$> integer
@@ -108,6 +122,7 @@ module Parse where
     <|> parens expr
     <|> seqExpr    
 
+  -- 匿名関数を読む
   anonFun :: Parser Expr
   anonFun = do
     params <- some identifier
@@ -120,9 +135,11 @@ module Parse where
       Nothing -> return $ makeGeneralType (length params)
     return $ FunDefAnon sig params body
 
+  -- 型を一般的な形にする。例：a -> b であれば t0 -> t1
   makeGeneralType :: Int -> RecList String
   makeGeneralType n = Elems (map (\x -> Elem ("t" ++ show x)) [0..n])
 
+  -- 型注釈つきの式を読む
   exprWithTypeSig :: Parser Expr
   exprWithTypeSig = do
     expr' <- expr
@@ -130,6 +147,7 @@ module Parse where
     sig <- typeList
     return $ TypeSig sig expr'
 
+  -- 型注釈つきの項を読む
   argWithTypeSig :: Parser Expr
   argWithTypeSig = do
     arg' <- arg
@@ -137,9 +155,11 @@ module Parse where
     sig <- typeList
     return $ TypeSig sig arg'
 
+  -- カッコで挟まれる表現を読む
   parens :: Parser a -> Parser a
   parens = between (symbol "(") (symboln ")")
 
+  -- 文字列のリテラルを読む
   strLit :: Parser Expr
   strLit = do
     beginChar <- char '"' <|> char '\''
@@ -147,6 +167,7 @@ module Parse where
     symboln (beginChar : "")
     return $ StrLit str
 
+  -- リストのリテラルを読む
   listLit :: Parser Expr
   listLit = do
     symbol "["
@@ -155,6 +176,7 @@ module Parse where
     code <- getCode
     return $ ListLit exprs code
 
+  -- 複式（改行で区切られて連続する式）を読む
   seqExpr :: Parser Expr
   seqExpr = do
     symbol "{"
@@ -163,15 +185,18 @@ module Parse where
     symbol "}"
     return $ Seq exprs
   
+  -- 式を読む。後ろの改行の連続をスキップする
   exprNewLine :: Parser Expr
   exprNewLine = do
     e <- expr
     many newLine
     return e
   
+  -- 改行を読む。; も改行扱いとする。
   newLine :: Parser String
   newLine = symbol "\n" <|> symbol ";"
   
+  -- プログラムのトップレベルを読む
   topLevel :: Parser Expr
   topLevel = do
     sc
@@ -179,6 +204,7 @@ module Parse where
     exprs <- some exprNewLine
     return $ Seq exprs
 
+  -- 型定義を読む
   typeDef :: Parser Expr
   typeDef = do
     rword "type"
@@ -190,6 +216,7 @@ module Parse where
     symbol "}"
     return $ TypeDef name types
 
+  -- 型定義中の、構造体のメンバーとその型を読む
   memberWithType :: Parser (String, RecList Type)
   memberWithType = do
     member <- identifier
@@ -197,6 +224,7 @@ module Parse where
     types <- typeList
     return $ (member, types)
 
+  -- 関数定義を読む
   fundef :: Parser Expr
   fundef = do
     rword "fun"
@@ -212,6 +240,7 @@ module Parse where
       Nothing -> return $ makeGeneralType (length params)
     return $ FunDef nameExpr types params body
   
+  -- パターンマッチを含む関数定義を読む
   funDefCase :: Parser Expr
   funDefCase = do
     rword "fun"
@@ -233,6 +262,7 @@ module Parse where
         varList n = map (\v -> Var v (Code { lineOfCode = 1 })) (paramList n)
         fst3 (a,b,c) = a
         
+  -- if式を読む
   ifExpr :: Parser Expr
   ifExpr = do
     rword "if"
@@ -243,6 +273,7 @@ module Parse where
     elseExpr <- expr
     return $ If condExpr thenExpr elseExpr
   
+  -- パターンマッチ式を読む
   matchExpr :: Parser ([Expr], Expr, Maybe Expr)
   matchExpr = do
     conds <- some arg
@@ -252,23 +283,27 @@ module Parse where
     many newLine
     return (conds, body, guard)
   
+  -- 関数適用を読む
   apply :: Parser Expr
   apply = do
     caller <- parens expr <|> (Var <$> identifier <*> getCode)
     args <- some arg
     return $ Apply caller args
 
+  -- 型注釈を読む
   typeList :: Parser (RecList String)
   typeList = do
     term1 <- typeTerm
     terms <- many $ (symbol "->") *> typeTerm
     return $ Elems (term1 : terms)
 
+  -- 型を表す項を読む。Int, a, [Double], (Int->String) など。
   typeTerm :: Parser (RecList String)
   typeTerm = try listTerm
     <|> (Elem <$> identifier)
     <|> parens typeList
 
+  -- リスト型を読む
   listTerm :: Parser (RecList String)
   listTerm = do
     symbol "["
@@ -276,6 +311,7 @@ module Parse where
     symbol "]"
     return $ Elems [ Elem "List", Elem term ]    
   
+  -- 現在パース中のコード位置を取得する
   getCode :: Parser Code
   getCode = do
     pos <- getSourcePos

@@ -1,3 +1,4 @@
+-- Main に直接関係するライブラリー
 module Lib where
   
   import Control.Monad.Except

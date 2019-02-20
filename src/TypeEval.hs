@@ -1,3 +1,4 @@
+-- 型評価
 module TypeEval where
 
   import Control.Monad (forM_)
@@ -10,10 +11,12 @@ module TypeEval where
 
   import Expr
   import Env
+  import EvalUtil
   import RecList
   import Primitive
   import TypeUtil 
 
+  -- 与えられた環境で、式の型を評価する
   typeEval :: Expr -> Env -> IOThrowsError (RecList Type)
   typeEval (IntLit i) env = return $ Elem "Int"
   typeEval (StrLit s) env = return $ Elem "String"
@@ -143,6 +146,7 @@ module TypeEval where
     where types = typeDefToTypes typeDef name
           params = map fst typeDef
 
+  -- プリミティブな環境で、与えられた式の型を評価する
   typeEvalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
   typeEvalWithPrimitiveEnv expr = do
     env <- liftIO $ newIORef Map.empty
@@ -150,6 +154,8 @@ module TypeEval where
     expr' <- typeEval expr env
     return $ TypeLit expr'
 
+  -- 与えられた環境をコピーして新しい環境をつくり、その下で与えられた式の型を評価する
+  -- もとの環境に影響を与えないように
   typeEvalWithEnv :: Expr -> Env -> IOThrowsError Expr
   typeEvalWithEnv expr env = do
     varMap <- liftIO $ readIORef env
@@ -158,7 +164,6 @@ module TypeEval where
     expr' <- typeEval expr env'
     return $ TypeLit expr'   
 
-  -- body types typeEnv env
   -- 型環境 typeEnv と env のもとで body を評価して、その型が types とマッチするかどうか
   matchResultType :: Expr -> RecList Type -> Map.Map String (RecList Type) -> Env -> IO Bool
   matchResultType body types typeEnv env = do
@@ -173,26 +178,13 @@ module TypeEval where
         Just env0 -> return True
         Nothing -> return False
 
+  -- リストの要素がすべて同一か？
   allTheSame :: (Eq a) => [a] -> Bool
   allTheSame [] = True
   allTheSame (e:[]) = True
   allTheSame (e:es) = if e == head es
     then allTheSame es
     else False
-
-  newEnv :: [String] -> [Expr] -> (Map.Map String [(RecList String, Expr)]) -> IO Env
-  newEnv params args outerEnv = do
-    env <- newIORef outerEnv
-    mapM_ (\p -> insertAny p env) (zip params args)
-    return env
-
-  insertAny :: (String, Expr) -> Env -> IO (Either String Env)
-  insertAny (name, expr) env = case expr of
-    (Fun types _ _ _) -> insertFun name types expr env
-    (TypeLit types)   -> case types of
-      Elems types' -> insertFun name types expr env
-      Elem type'   -> insertVarForce name expr env
-    otherwise         -> insertVarForce name expr env
 
   -- マッチ式の引数の列が、与えられた型の列(マッチ式を含む関数の型)とマッチするか？
   matchCondType :: [RecList Type] -> [Expr] -> Maybe Expr -> Map.Map String (RecList Type) -> Env -> IO (Bool, Map.Map String (RecList Type))
@@ -229,16 +221,6 @@ module TypeEval where
           else return (False, Map.empty)
         Left error -> trace error $ return (False, Map.empty)
   matchCondType e1 e2 _ varMap env = trace ("matchCondType: " ++ show (e1,e2)) $ return (False, Map.empty)
-
-  allM :: Monad m => (a -> m Bool) -> [a] -> m Bool
-  allM p [] = return True
-  allM p (x:xs) = ifM (p x) (allM p xs) (return False)
-
-  andM :: Monad m => [m Bool] -> m Bool
-  andM = allM id
-
-  ifM :: Monad m => m Bool -> m a -> m a -> m a
-  ifM b t f = do b <- b; if b then t else f
 
   -- 型もしくは型変数を、型環境を元にインスタンス化する
   typeInst :: RecList Type -> Map.Map String (RecList Type) -> RecList Type

@@ -1,3 +1,4 @@
+-- 型の操作に関するユーティリティ
 module TypeUtil where
 
   import Control.Monad.Except
@@ -7,10 +8,12 @@ module TypeUtil where
 
   type IOThrowsError = ExceptT String IO
 
+  -- 具体的な型か？（型変数を含まないか）
   isConcrete :: RecList String -> Bool
   isConcrete (Elem a) = (a == "List") || isUpper (a!!0)
   isConcrete (Elems xs) = and (Prelude.map isConcrete xs)
 
+  -- 抽象的な型か？（型変数のみを含む）
   isVariable :: RecList String -> Bool
   isVariable (Elem a) = (a == "List") || isLower (a!!0)
   isVariable (Elems xs) = and (Prelude.map isVariable xs)
@@ -20,6 +23,7 @@ module TypeUtil where
   hasVariable (Elem a) = isLower (a!!0)
   hasVariable (Elems xs) = or (Prelude.map isVariable xs)  
 
+  -- 型を一般化する：例 a -> b なら t0 -> t1
   generalizeTypes :: RecList String -> RecList String
   generalizeTypes list = gnrlize' list (makeMap (rFlatten list))
 
@@ -32,6 +36,7 @@ module TypeUtil where
     let (Elems rest') = (gnrlize' (Elems es) table)
     in Elems ((gnrlize' e table) : rest')
 
+  -- 与えられた型のリストから、一般化された型への対応を作る
   makeMap :: [String] -> Map String Int
   makeMap list = makeMap' list 0 Map.empty
 
@@ -49,6 +54,8 @@ module TypeUtil where
   typeDefToTypes :: [(String, RecList String)] -> String -> RecList String
   typeDefToTypes es name = Elems ((foldMap ((++) . (\(Elems x) -> x) . snd) es []) ++ [Elem name])
 
+  -- 型を一般化する際に、ベースとなる文字列を指定する
+  -- x なら x0, x1, ..
   generalizeTypesWith :: String -> RecList String -> RecList String
   generalizeTypesWith str list = gnrlizeWith str list (makeMap (rFlatten list))
 
