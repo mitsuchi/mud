@@ -60,6 +60,9 @@ fun factorial : Int -> Int = {
 }
 factorial 5   #=> 120
 
+# 文字列
+"hello, " + "world"   #=> "hello, world"
+
 # リスト
 [1,2,3] + [4,5]   #=> [1,2,3,4,5]
 
@@ -67,10 +70,27 @@ factorial 5   #=> 120
 fun map : [a] -> (a->b) -> [b] = {
   []     f -> []
   [e;es] f -> [f e] + map es f
+  # e はリストの先頭の要素に、es は残りにマッチする
 }
 
 map [1,2,3] double  #=> [2,4,6]
 [1,2,3].map double  #=> [2,4,6] 
+
+# if式
+if 1 == 2 then 3 else 4            #=> 4
+if 1 == 1 && 2 == 3 then 4 else 5  #=> 5
+if True then 1 else 2              #=> 1
+if False then 1 else 2             #=> 2
+
+# ブール代数
+True + True    #=> True
+True + False   #=> True
+False + False  #=> False
+
+True * True    #=> True
+True * False   #=> False
+
+False + True * False   #=> False
 
 # 同じ関数名でも引数の型によって異なる関数が呼び出される
 fun incr : Int -> Int = x -> x + 1
@@ -145,12 +165,6 @@ fun + : Complex -> Complex -> Complex = a b -> Complex (a.r+b.r) (a.i+b.i)
 fun - : Complex -> Complex -> Complex = a b -> Complex (a.r-b.r) (a.i-b.i)
 fun * : Complex -> Complex -> Complex = a b -> Complex (a.r*b.r-a.i*b.i) (a.r*b.i+a.i*b.r)
 Complex 1 2 + Complex 3 4  #=> Complex 4 6
-
-# if文
-if 1 == 2 then 3 else 4            #=> 4
-if 1 == 1 && 2 == 3 then 4 else 5  #=> 5
-if True then 1 else 2              #=> 1
-if False then 1 else 2             #=> 2
 
 # 高階関数
 fun twice : (Int->Int) -> (Int->Int) = f -> (x -> f (f x) : Int->Int)
