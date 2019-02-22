@@ -39,7 +39,7 @@ sum 5   #=> 15
 # 1 * 2 * .. * n を計算する関数
 fun factorial : Int -> Int = {
     1 -> 1
-    n -> n * (factorial (n-1))
+    n -> n * factorial (n-1)
 }
 factorial 5   #=> 120
 
