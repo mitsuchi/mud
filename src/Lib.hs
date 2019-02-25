@@ -82,11 +82,30 @@ module Lib where
 
   -- プログラムをファイルから読み、型評価し、評価する
   execRun :: [String] -> IO ()
+  execRun ["run", "limited", microSec, filename] = do
+    withFile filename ReadMode $ \handle -> do
+      program <- hGetContents handle
+      result <- timeout (read microSec :: Int) $ do
+        runExceptT $ do
+          expr <- parseString program
+          typeEvalWithPrimitiveEnv expr
+          evalWithPrimitiveEnv expr
+      case result of
+        Just (Left error) -> putStrLn error
+        Just (Right expr) -> return ()
+        Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
+          ++ show ((read microSec :: Float)/10^6)
+          ++ " sec)"
   execRun ["run", filename] = do
     withFile filename ReadMode $ \handle -> do
       program <- hGetContents handle
-      ev program
-      return ()
+      result <- runExceptT $ do
+        expr <- parseString program
+        typeEvalWithPrimitiveEnv expr
+        evalWithPrimitiveEnv expr
+      case result of
+        Left error -> putStrLn error
+        Right expr -> return ()
   execRun ["run"] = putStrLn $ "mud run: run Mud program\n"
     ++ "\n"
     ++ "Usage:\n"
