@@ -99,12 +99,13 @@ module Lib where
 
   -- プログラム文字列を型評価し、評価し、結果を表示する
   execEval :: [String] -> IO ()
-  execEval ["eval", "limited", microSec, program] = do
-    output <- evl (read microSec :: Int) program
-    putStrLn output
-  execEval ["eval", "silent", program] = do
-    ev program
-    return ()
+  execEval ["eval", "silent", "limited", microSec, program] = do
+    result <- timeout (read microSec :: Int) (ev program)
+    case result of
+      Just result' -> return ()
+      Nothing      -> putStrLn $ "time limit exceeded ("
+       ++ show ((read microSec :: Float)/10^6)
+       ++ " sec)"
   execEval ["eval", program] = do
     output <- ev program
     putStrLn output
@@ -151,16 +152,6 @@ module Lib where
     case output of
       Left error -> return $ error
       Right expr -> return $ show expr
-
-  -- 時間制限つきeval: playground 用
-  evl :: Int -> String -> IO String
-  evl microSec program = do
-    result <- timeout microSec (ev program)
-    case result of
-      Just result' -> return result'
-      Nothing      -> return $ "time limit exceeded ("
-       ++ show (fromIntegral microSec/10^6)
-       ++ " sec)"
 
   -- ファイルからプログラムを読んでパースして評価して結果を表示する
   evf :: String -> IO ()
