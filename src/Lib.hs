@@ -103,7 +103,7 @@ module Lib where
     result <- timeout (read microSec :: Int) (ev program)
     case result of
       Just result' -> return ()
-      Nothing      -> putStrLn $ "time limit exceeded ("
+      Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
        ++ show ((read microSec :: Float)/10^6)
        ++ " sec)"
   execEval ["eval", program] = do
