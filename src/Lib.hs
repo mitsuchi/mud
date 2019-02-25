@@ -100,9 +100,14 @@ module Lib where
   -- プログラム文字列を型評価し、評価し、結果を表示する
   execEval :: [String] -> IO ()
   execEval ["eval", "silent", "limited", microSec, program] = do
-    result <- timeout (read microSec :: Int) (ev program)
+    result <- timeout (read microSec :: Int) $ do
+      runExceptT $ do
+        expr <- parseString program
+        typeEvalWithPrimitiveEnv expr
+        evalWithPrimitiveEnv expr
     case result of
-      Just result' -> return ()
+      Just (Left error) -> putStrLn error
+      Just (Right expr) -> return ()
       Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
        ++ show ((read microSec :: Float)/10^6)
        ++ " sec)"
