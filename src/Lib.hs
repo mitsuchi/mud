@@ -80,13 +80,13 @@ module Lib where
       Left bundle -> putStrLn (errorBundlePretty bundle)        
       Right expr -> putStrLn (show expr)
 
-  -- プログラムをファイルから読み、型評価し、評価し、結果を表示する
+  -- プログラムをファイルから読み、型評価し、評価する
   execRun :: [String] -> IO ()
   execRun ["run", filename] = do
     withFile filename ReadMode $ \handle -> do
       program <- hGetContents handle
-      output <- ev program
-      putStrLn output
+      ev program
+      return ()
   execRun ["run"] = putStrLn $ "mud run: run Mud program\n"
     ++ "\n"
     ++ "Usage:\n"
@@ -101,7 +101,10 @@ module Lib where
   execEval :: [String] -> IO ()
   execEval ["eval", "limited", microSec, program] = do
     output <- evl (read microSec :: Int) program
-    putStrLn output    
+    putStrLn output
+  execEval ["eval", "silent", program] = do
+    ev program
+    return ()
   execEval ["eval", program] = do
     output <- ev program
     putStrLn output
