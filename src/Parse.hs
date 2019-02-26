@@ -257,10 +257,10 @@ module Parse where
       Nothing -> return $ makeGeneralType (paramNum matches) 
     return $ FunDef nameExpr types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types)
       where 
-        paramNum matches = length (fst3 (head matches))
+        paramNum matches = length (fst4 (head matches))
         paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
         varList n = map (\v -> Var v (Code { lineOfCode = 1 })) (paramList n)
-        fst3 (a,b,c) = a
+        fst4 (a,b,c,d) = a
         
   -- if式を読む
   ifExpr :: Parser Expr
@@ -274,14 +274,15 @@ module Parse where
     return $ If condExpr thenExpr elseExpr
   
   -- パターンマッチ式を読む
-  matchExpr :: Parser ([Expr], Expr, Maybe Expr)
+  matchExpr :: Parser ([Expr], Expr, Maybe Expr, Code)
   matchExpr = do
     conds <- some arg
     guard <- optional ( symbol "|" *> expr <* symbol "|")
     symbol "->"
+    code <- getCode    
     body <- expr
     many newLine
-    return (conds, body, guard)
+    return (conds, body, guard, code)
   
   -- 関数適用を読む
   apply :: Parser Expr

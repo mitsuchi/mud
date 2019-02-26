@@ -78,9 +78,9 @@ module Eval where
     eval (Apply expr' args') env
   eval (Case es matchExprs types) env = do
     es' <- mapM (\e -> eval e env ) es
-    pair' <- lift $ findM (\(args, body, guard) -> matchCond es' args guard Map.empty env) matchExprs
+    pair' <- lift $ findM (\(args, body, guard, code) -> matchCond es' args guard Map.empty env) matchExprs
     case pair' of 
-      Just (args, body, guard) -> let (params, args') = paramsAndArgs args es'
+      Just (args, body, guard, code) -> let (params, args') = paramsAndArgs args es'
                    in eval (Apply (Fun types params body env) args') env
       Nothing   -> throwError "condition no match"
   eval expr@(TypeSig sig (Var name _)) env = do

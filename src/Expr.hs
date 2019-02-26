@@ -31,7 +31,7 @@ module Expr where
     | FunDefAnon (RecList Type) [Param] Expr
     | Fun (RecList Type) [Param] Expr Env
     | Apply Expr [Expr]
-    | Case [Expr] [([Expr],Expr,Maybe Expr)] (RecList Type)
+    | Case [Expr] [([Expr],Expr,Maybe Expr,Code)] (RecList Type)
     | TypeSig (RecList Type) Expr
     | TypeLit (RecList Type)
     | ListLit [Expr] Code
