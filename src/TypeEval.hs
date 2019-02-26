@@ -129,16 +129,16 @@ module TypeEval where
       --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypes types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"    
-  typeEval (Case es matchExprs (Elems types')) env = do
+  typeEval (Case es ((args, body, guard):[]) (Elems types')) env = do
     (Elems types) <- return $ generalizeTypes (Elems types')
-    matchAll <- liftIO $ andM $ map ( \(args, body, guard) -> do
-      (bool, typeEnv) <- matchCondType (init types) args guard Map.empty env
-      bool' <- if bool then matchResultType body (last types) typeEnv env else return False
-      return bool'
-      ) matchExprs
-    if matchAll
-      then return $ last types
-      else throwError "type mismatch. condition no match"
+    (bool, typeEnv) <- liftIO $ matchCondType (init types) args guard Map.empty env    
+    bodyType <- typeEvalMatchExprBody body typeEnv env
+    case unify (last types) bodyType typeEnv of
+      Just env0 -> return $ last types
+      Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (last types) ++ "', but actually returns '" ++ rArrow bodyType ++ "'"          
+  typeEval (Case es ((args, body, guard):matchExprs) (Elems types')) env = do
+    typeEval (Case es ((args, body, guard):[]) (Elems types')) env
+    typeEval (Case es matchExprs (Elems types')) env
   typeEval (TypeDef (Var name code) typeDef) env = do
     forM_ typeDef $ \(member, (Elems [typeList])) -> do
       typeEval (FunDef (Var member code) (Elems [Elem name, typeList]) ["x"] (TypeLit typeList)) env
@@ -164,19 +164,13 @@ module TypeEval where
     expr' <- typeEval expr env'
     return $ TypeLit expr'   
 
-  -- 型環境 typeEnv と env のもとで body を評価して、その型が types とマッチするかどうか
-  matchResultType :: Expr -> RecList Type -> Map.Map String (RecList Type) -> Env -> IO Bool
-  matchResultType body types typeEnv env = do
+  -- 型環境 typeEnv と env のもとで body を評価する
+  typeEvalMatchExprBody :: Expr -> Map.Map String (RecList Type) -> Env -> IOThrowsError (RecList Type)
+  typeEvalMatchExprBody body typeEnv env = do
     varMap' <- liftIO $ readIORef env
-    env' <- newIORef varMap'
-    mapM_ (\(name, types) -> insertAny (name, TypeLit types) env') (Map.toList typeEnv)
-    bodyType <- runExceptT $ typeEval body env'
-    --trace ("bodyType: " ++ (show bodyType) ++ ", types: " ++ (show types)) $ return True
-    case bodyType of
-      Left error -> return False
-      Right bodyType' -> case unify types bodyType' typeEnv of
-        Just env0 -> return True
-        Nothing -> return False
+    env' <- liftIO $ newIORef varMap'
+    res <- liftIO $ mapM_ (\(name, types) -> insertAny (name, TypeLit types) env') (Map.toList typeEnv)
+    typeEval body env'
 
   -- リストの要素がすべて同一か？
   allTheSame :: (Eq a) => [a] -> Bool
