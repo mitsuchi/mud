@@ -117,17 +117,16 @@ module TypeEval where
     body' <- typeEval body env'
     case unify types (rAppend (rInit types) (Elems [body'])) Map.empty of
       Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env 
-      Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"
-  typeEval (FunDefAnon types params body) env = do
+      Nothing -> throwError $ (show $ lineOfCode code) ++ ": type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"
+  typeEval (FunDefAnon types params body code) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env
     env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypes types))) varMap
     varMap' <- liftIO $ readIORef env'
     body' <- typeEval body env'
     case unify types (rAppend (rInit types) (Elems [body'])) Map.empty of      
-      --Just env0 -> return $ types
       Just env0 -> return $ generalizeTypes types
-      Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"    
+      Nothing -> throwError $ (show $ lineOfCode code) ++ ": type mismatch. function supposed to return '" ++ rArrow (rLast types) ++ "', but actually returns '" ++ rArrow body' ++ "'"    
   typeEval (Case es ((args, body, guard, code):[]) (Elems types')) env = do
     (Elems types) <- return $ generalizeTypes (Elems types')
     (bool, typeEnv) <- liftIO $ matchCondType (init types) args guard Map.empty env    

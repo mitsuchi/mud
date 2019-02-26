@@ -59,7 +59,7 @@ module Eval where
       Right env -> return expr
   eval (FunDef nameExpr types params body) env = do
     eval (Assign nameExpr (Fun types params body env)) env  
-  eval (FunDefAnon types params body) env = do
+  eval (FunDefAnon types params body code) env = do
     return $ Fun types params body env
   eval (Apply (Call name _) args) env = call name args env emptyCode
   eval (Apply (Fun types params body outerEnv) args) env = do

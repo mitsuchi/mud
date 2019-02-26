@@ -28,7 +28,7 @@ module Expr where
     | Seq [Expr]
     | Assign NameExpr Expr
     | FunDef NameExpr (RecList Type) [Param] Expr
-    | FunDefAnon (RecList Type) [Param] Expr
+    | FunDefAnon (RecList Type) [Param] Expr Code
     | Fun (RecList Type) [Param] Expr Env
     | Apply Expr [Expr]
     | Case [Expr] [([Expr],Expr,Maybe Expr,Code)] (RecList Type)
@@ -74,7 +74,7 @@ module Expr where
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
     show (Fun types params body env) = "function : " ++ (show types)
     show (FunDef (Var name _) types params body) = "(Fun (" ++ name ++ ") " ++ (show body) ++ ")"
-    show (FunDefAnon types params body) = "anon fun : " ++ (show types)
+    show (FunDefAnon types params body code) = "anon fun : " ++ (show types)
     show (Apply e1 e2) = "(" ++ show (e1) ++ " " ++ show (e2) ++ ")"
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
     show (ListLit exprs _) = "[" ++ (intercalate "," (map show exprs)) ++ "]"

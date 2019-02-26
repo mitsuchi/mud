@@ -127,13 +127,14 @@ module Parse where
   anonFun = do
     params <- some identifier
     symbol "->"
+    code <- getCode
     body <- expr
     sig' <- optional (symbol ":" *> typeList)
     sig <- case sig' of
       Just list -> return list
       -- 型を省略した場合はもっとも一般的な型にしちゃう
       Nothing -> return $ makeGeneralType (length params)
-    return $ FunDefAnon sig params body
+    return $ FunDefAnon sig params body code
 
   -- 型を一般的な形にする。例：a -> b であれば t0 -> t1
   makeGeneralType :: Int -> RecList String
