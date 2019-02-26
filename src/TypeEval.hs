@@ -107,7 +107,7 @@ module TypeEval where
     if cond' == Elem "Bool"
       then if then' == else'
         then return then'
-        else error $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
+        else throwError $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
       else throwError $ "type mismatch. condition-part has a type '" ++ (show cond') ++ "'. must be 'Bool'."
   typeEval (FunDef nameExpr@(Var name code) types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
