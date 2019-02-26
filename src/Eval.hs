@@ -91,7 +91,7 @@ module Eval where
         env' <- liftIO $ readIORef env
         throwError ("function '" ++ name ++ "' not found")
   eval (TypeSig sig expr) env = eval expr env
-  eval (If condExpr thenExpr elseExpr) env = do
+  eval (If condExpr thenExpr elseExpr code) env = do
     cond' <- eval condExpr env
     case cond' of
       BoolLit True -> eval thenExpr env

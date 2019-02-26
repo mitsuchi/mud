@@ -100,15 +100,15 @@ module TypeEval where
   typeEval (Apply expr args) env = do
     expr' <- typeEval expr env
     typeEval (Apply (TypeLit expr') args) env        
-  typeEval (If condExpr thenExpr elseExpr) env = do
+  typeEval (If condExpr thenExpr elseExpr code) env = do
     cond' <- typeEval condExpr env
     then' <- typeEval thenExpr env
     else' <- typeEval elseExpr env
     if cond' == Elem "Bool"
       then if then' == else'
         then return then'
-        else throwError $ "type mismatch. then-part has a type '" ++ (show then') ++ "', else-part has '" ++ (show else') ++ "'. they must be the same."
-      else throwError $ "type mismatch. condition-part has a type '" ++ (show cond') ++ "'. must be 'Bool'."
+        else throwError $ (show $ lineOfCode code) ++ ": type mismatch. then-part has a type '" ++ (rArrow then') ++ "', else-part has '" ++ (rArrow else') ++ "'. they must be the same."
+      else throwError $ (show $ lineOfCode code) ++ ": type mismatch. condition-part has a type '" ++ (rArrow cond') ++ "'. must be 'Bool'."
   typeEval (FunDef nameExpr@(Var name code) types params body) env = do
     -- 本体の型が返り値の型と一致する必要がある
     varMap <- liftIO $ readIORef env

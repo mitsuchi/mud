@@ -36,7 +36,7 @@ module Expr where
     | TypeLit (RecList Type)
     | ListLit [Expr] Code
     | BoolLit Bool
-    | If Expr Expr Expr -- If CondEx ThenEx ElseEx
+    | If Expr Expr Expr Code -- If CondEx ThenEx ElseEx
     | Neg Expr
     | TypeDef NameExpr [(String, RecList Type)]
     | StructType [(String, RecList Type)]
@@ -79,7 +79,7 @@ module Expr where
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
     show (ListLit exprs _) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
     show (BoolLit b) = show b
-    show (If condEx thenEx elseEx) = "if " ++ show (condEx) ++ " then " ++ show thenEx ++ " else " ++ show elseEx
+    show (If condEx thenEx elseEx code) = "if " ++ show (condEx) ++ " then " ++ show thenEx ++ " else " ++ show elseEx
     show (Case exprs matches types) = "(Case " ++ (show matches) ++ ")"
     show (TypeDef (Var name _) types) = "(TypeDef " ++ name ++ " " ++ show types ++ ")"
     show (StructType types) = "(StructType " ++ show types ++ ")"

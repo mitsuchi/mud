@@ -266,12 +266,13 @@ module Parse where
   ifExpr :: Parser Expr
   ifExpr = do
     rword "if"
+    code <- getCode
     condExpr <- expr
     rword "then"
     thenExpr <- expr
     rword "else"
     elseExpr <- expr
-    return $ If condExpr thenExpr elseExpr
+    return $ If condExpr thenExpr elseExpr code
   
   -- パターンマッチ式を読む
   matchExpr :: Parser ([Expr], Expr, Maybe Expr, Code)
