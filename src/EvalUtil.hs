@@ -33,11 +33,3 @@ module EvalUtil where
     ifM :: Monad m => m Bool -> m a -> m a -> m a
     ifM b t f = do b <- b; if b then t else f    
   
-    -- and のモナド版
-    andM :: Monad m => [m Bool] -> m Bool
-    andM = allM id
-
-    -- andM のための補助関数
-    allM :: Monad m => (a -> m Bool) -> [a] -> m Bool
-    allM p [] = return True
-    allM p (x:xs) = ifM (p x) (allM p xs) (return False)
