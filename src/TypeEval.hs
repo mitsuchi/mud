@@ -136,8 +136,8 @@ module TypeEval where
     case unify (last types) bodyType typeEnv of
       Just env0 -> return $ last types
       Nothing -> throwError $ "type mismatch. function supposed to return '" ++ rArrow (last types) ++ "', but actually returns '" ++ rArrow bodyType ++ "'"          
-  typeEval (Case es ((args, body, guard):matchExprs) (Elems types')) env = do
-    typeEval (Case es ((args, body, guard):[]) (Elems types')) env
+  typeEval (Case es (expr:matchExprs) (Elems types')) env = do
+    typeEval (Case es (expr:[]) (Elems types')) env
     typeEval (Case es matchExprs (Elems types')) env
   typeEval (TypeDef (Var name code) typeDef) env = do
     forM_ typeDef $ \(member, (Elems [typeList])) -> do
