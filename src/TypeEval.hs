@@ -143,6 +143,7 @@ module TypeEval where
     typeEval (FunDef (Var name code) types params (TypeLit (rLast types))) env    
     where types = typeDefToTypes typeDef name
           params = map fst typeDef
+  typeEval e env = trace ("runtime error: typeEval failed. " ++ show e) $ return (Elem "")
 
   -- プリミティブな環境で、与えられた式の型を評価する
   typeEvalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
