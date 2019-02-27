@@ -72,9 +72,9 @@ module Expr where
     show (Var name _) = name
     show (BinOp op _ e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
     show (Seq exprs) = foldr ((++).(++ ";").show) "" exprs  
-    show (Fun types params body env) = "function : " ++ (show types)
+    show (Fun types params body env) = "function : " ++ (rArrow types)
     show (FunDef (Var name _) types params body) = "(Fun (" ++ name ++ ") " ++ (show body) ++ ")"
-    show (FunDefAnon types params body code) = "anon fun : " ++ (show types)
+    show (FunDefAnon types params body code) = "(anon fun : " ++ (rArrow types) ++ ", body: " ++ (show body) ++ ")"
     show (Apply e1 e2) = "(" ++ show (e1) ++ " " ++ show (e2) ++ ")"
     show (TypeSig sig expr) = (show expr) ++ " : " ++ (show sig)
     show (ListLit exprs _) = "[" ++ (intercalate "," (map show exprs)) ++ "]"
@@ -86,7 +86,8 @@ module Expr where
     show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ Map.lookup "type" sv)) sv
       where f k a result = if k == "type" then result else result ++ " " ++ k ++ ":" ++ (show a)
     show (Call name _) = "(Call " ++ name ++ ")"
-    show (TypeLit types) = "(TypeLit " ++ show types ++ ")"
+    show (TypeLit types) = "(TypeLit " ++ rArrow types ++ ")"
+
   instance Eq Expr where
     (IntLit i1) == (IntLit i2) = i1 == i2
     (StrLit s1) == (StrLit s2) = s1 == s2
