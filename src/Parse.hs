@@ -119,8 +119,9 @@ module Parse where
     <|> Var <$> identifier <*> getCode
     <|> listLit
     <|> try (parens argWithTypeSig)
-    <|> parens expr
-    <|> seqExpr    
+--    <|> parens expr
+    <|> parenExpr
+    <|> seqExpr
 
   -- 匿名関数を読む
   anonFun :: Parser Expr
@@ -177,13 +178,21 @@ module Parse where
     code <- getCode
     return $ ListLit exprs code
 
+  -- カッコ式（カッコの中に式が一つだけある式）を読む
+  parenExpr :: Parser Expr
+  parenExpr = do
+    symbol "("
+    e <- expr
+    symboln ")"
+    return $ Seq [e]
+
   -- 複式（改行で区切られて連続する式）を読む
   seqExpr :: Parser Expr
   seqExpr = do
     symbol "{"
     many newLine
     exprs <- many exprNewLine
-    symbol "}"
+    symboln "}"
     return $ Seq exprs
   
   -- 式を読む。後ろの改行の連続をスキップする
