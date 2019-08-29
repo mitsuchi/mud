@@ -20,14 +20,14 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/mitsuchi/mud#readme>
 
 dependencies:
-- base >= 4.7 && < 5
-- megaparsec >= 7.0
-- parser-combinators >= 1.0
-- containers >= 0.6
-- mtl >= 2.2
-- HUnit >= 1.6
-- test-framework >= 0.8
-- test-framework-hunit >= 0.3
+- base
+- megaparsec
+- parser-combinators
+- containers
+- mtl
+- HUnit
+- test-framework
+- test-framework-hunit
 
 library:
   source-dirs: src
