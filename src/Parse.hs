@@ -58,14 +58,14 @@ identifier = (lexeme . try) (identifier' >>= check)
   where
     check x = if x `elem` reservedWords
                 then fail $ "keyword " ++ show x ++ " cannot be an identifier"
-                else return x
+                else pure x
 
 identifier' :: Parser String
 identifier' = do
   firstLetter <- letterChar
   middleLetters <- many ( oneOf (['0'..'9'] ++ ['a'..'z'] ++ ['A'..'Z'] ++ ['_']) )
   lastLetters <- many (oneOf "!?_'")
-  return $ firstLetter : (middleLetters ++ lastLetters)
+  pure $ firstLetter : (middleLetters ++ lastLetters)
 
 -- 与えられた文字列を読む。後ろの空白（改行を含む）をスキップする。
 symbol :: String -> Parser String
@@ -132,10 +132,10 @@ anonFun = do
   body <- expr
   sig' <- optional (symbol ":" *> typeList)
   sig <- case sig' of
-    Just list -> return list
+    Just list -> pure list
     -- 型を省略した場合はもっとも一般的な型にしちゃう
-    Nothing   -> return $ makeGeneralType (length params)
-  return $ FunDefAnon sig params body code
+    Nothing   -> pure $ makeGeneralType (length params)
+  pure $ FunDefAnon sig params body code
 
 -- 型を一般的な形にする。例：a -> b であれば t0 -> t1
 makeGeneralType :: Int -> RecList String
@@ -147,7 +147,7 @@ exprWithTypeSig = do
   expr' <- expr
   symbol ":"
   sig <- typeList
-  return $ TypeSig sig expr'
+  pure $ TypeSig sig expr'
 
 -- 型注釈つきの項を読む
 argWithTypeSig :: Parser Expr
@@ -155,7 +155,7 @@ argWithTypeSig = do
   arg' <- arg
   symbol ":"
   sig <- typeList
-  return $ TypeSig sig arg'
+  pure $ TypeSig sig arg'
 
 -- カッコで挟まれる表現を読む
 parens :: Parser a -> Parser a
@@ -167,7 +167,7 @@ strLit = do
   beginChar <- char '"' <|> char '\''
   str <- many $ noneOf (beginChar : "")
   symboln (beginChar : "")
-  return $ StrLit str
+  pure $ StrLit str
 
 -- リストのリテラルを読む
 listLit :: Parser Expr
@@ -176,7 +176,7 @@ listLit = do
   exprs <- sepBy expr (symbol "," <|> symbol ";")
   symboln "]"
   code <- getCode
-  return $ ListLit exprs code
+  pure $ ListLit exprs code
 
 -- カッコ式（カッコの中に式が一つだけある式）を読む
 parenExpr :: Parser Expr
@@ -184,7 +184,7 @@ parenExpr = do
   symbol "("
   e <- expr
   symboln ")"
-  return $ Seq [e]
+  pure $ Seq [e]
 
 -- 複式（改行で区切られて連続する式）を読む
 seqExpr :: Parser Expr
@@ -193,14 +193,14 @@ seqExpr = do
   many newLine
   exprs <- many exprNewLine
   symboln "}"
-  return $ Seq exprs
+  pure $ Seq exprs
 
 -- 式を読む。後ろの改行の連続をスキップする
 exprNewLine :: Parser Expr
 exprNewLine = do
   e <- expr
   many newLine
-  return e
+  pure e
 
 -- 改行を読む。; も改行扱いとする。
 newLine :: Parser String
@@ -212,7 +212,7 @@ topLevel = do
   sc
   many newLine
   exprs <- some exprNewLine
-  return $ Seq exprs
+  pure $ Seq exprs
 
 -- 型定義を読む
 typeDef :: Parser Expr
@@ -224,7 +224,7 @@ typeDef = do
   types <- sepBy1 memberWithType (symbol ",")
   many newLine
   symbol "}"
-  return $ TypeDef name types
+  pure $ TypeDef name types
 
 -- 型定義中の、構造体のメンバーとその型を読む
 memberWithType :: Parser (String, RecList Type)
@@ -232,7 +232,7 @@ memberWithType = do
   member <- identifier
   symbol ":"
   types <- typeList
-  return $ (member, types)
+  pure $ (member, types)
 
 -- 関数定義を読む
 fundef :: Parser Expr
@@ -245,10 +245,10 @@ fundef = do
   symbol "->"
   body <- expr
   types <- case types' of
-    Just list -> return list
+    Just list -> pure list
     -- 型を省略した場合はもっとも一般的な型にしちゃう
-    Nothing   -> return $ makeGeneralType (length params)
-  return $ FunDef nameExpr types params body
+    Nothing   -> pure $ makeGeneralType (length params)
+  pure $ FunDef nameExpr types params body
 
 -- パターンマッチを含む関数定義を読む
 funDefCase :: Parser Expr
@@ -262,10 +262,10 @@ funDefCase = do
   matches <- some matchExpr
   symbol "}"
   types <- case types' of
-    Just list -> return list
+    Just list -> pure list
     -- 型を省略した場合はもっとも一般的な型にしちゃう
-    Nothing   -> return $ makeGeneralType (paramNum matches)
-  return $ FunDef nameExpr types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types)
+    Nothing   -> pure $ makeGeneralType (paramNum matches)
+  pure $ FunDef nameExpr types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types)
     where
       paramNum matches = length (fst4 (head matches))
       paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
@@ -282,7 +282,7 @@ ifExpr = do
   thenExpr <- expr
   rword "else"
   elseExpr <- expr
-  return $ If condExpr thenExpr elseExpr code
+  pure $ If condExpr thenExpr elseExpr code
 
 -- パターンマッチ式を読む
 matchExpr :: Parser ([Expr], Expr, Maybe Expr, Code)
@@ -293,21 +293,21 @@ matchExpr = do
   code <- getCode
   body <- expr
   many newLine
-  return (conds, body, guard, code)
+  pure (conds, body, guard, code)
 
 -- 関数適用を読む
 apply :: Parser Expr
 apply = do
   caller <- parens expr <|> (Var <$> identifier <*> getCode)
   args <- some arg
-  return $ Apply caller args
+  pure $ Apply caller args
 
 -- 型注釈を読む
 typeList :: Parser (RecList String)
 typeList = do
   term1 <- typeTerm
   terms <- many $ (symbol "->") *> typeTerm
-  return $ Elems (term1 : terms)
+  pure $ Elems (term1 : terms)
 
 -- 型を表す項を読む。Int, a, [Double], (Int->String) など。
 typeTerm :: Parser (RecList String)
@@ -321,10 +321,10 @@ listTerm = do
   symbol "["
   term <- identifier
   symbol "]"
-  return $ Elems [ Elem "List", Elem term ]
+  pure $ Elems [ Elem "List", Elem term ]
 
 -- 現在パース中のコード位置を取得する
 getCode :: Parser Code
 getCode = do
   pos <- getSourcePos
-  return $ Code { lineOfCode = unPos (sourceLine pos) }
+  pure $ Code { lineOfCode = unPos (sourceLine pos) }

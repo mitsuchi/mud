@@ -13,7 +13,7 @@ newEnv :: [String] -> [Expr] -> (Map String [(RecList String, Expr)]) -> IO Env
 newEnv params args outerEnv = do
     env <- newIORef outerEnv
     mapM_ (\p -> insertAny p env) (zip params args)
-    return env
+    pure env
 
 -- 環境に変数または関数を登録する
 insertAny :: (String, Expr) -> Env -> IO (Either String Env)
@@ -26,8 +26,8 @@ insertAny (name, expr) env = case expr of
 
 -- find のモナド版
 findM :: Monad m => (a -> m Bool) -> [a] -> m (Maybe a)
-findM p []     = return Nothing
-findM p (x:xs) = ifM (p x) (return $ Just x) (findM p xs)
+findM p []     = pure Nothing
+findM p (x:xs) = ifM (p x) (pure $ Just x) (findM p xs)
 
 -- if のモナド版
 ifM :: Monad m => m Bool -> m a -> m a -> m a

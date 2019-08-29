@@ -22,7 +22,7 @@ lookupVarLoose name env = lookupVar' name env True
 lookupVar' :: (Show a) => String -> GeneralEnv a -> Bool -> IO (Maybe a)
 lookupVar' name env loose = do
   env' <- readIORef env
-  return $ do
+  pure $ do
     vars <- Map.lookup name env'
     case vars of
       -- 同じ名前の定義の先頭に変数があればそれを参照する
@@ -40,36 +40,36 @@ insertFun name types expr env = do
   if not fe
   then do
     insertFun' name types expr env
-    return $ Right env
+    pure $ Right env
   else
-    return $ Left ("function '" ++ name ++ " : " ++ argSig types ++ "' already exists")
+    pure $ Left ("function '" ++ name ++ " : " ++ argSig types ++ "' already exists")
 
 -- 同名の関数がある場合は、具体型の関数は先頭に、多相型の関数は末尾に追加する
 insertFun' :: String -> RecList String -> a -> GeneralEnv a -> IO (GeneralEnv a)
 insertFun' name types expr env = do
   env' <- readIORef env
   funs' <- case Map.lookup name env' of
-    Nothing   -> return []
-    Just funs -> return funs
-  generalizedTypes <- return $ generalizeTypes types
+    Nothing   -> pure []
+    Just funs -> pure funs
+  generalizedTypes <- pure $ generalizeTypes types
   writeIORef env (Map.insert name (if types == generalizedTypes then [(generalizedTypes, expr)] ++ funs' else funs' ++ [(generalizedTypes, expr)]) env')
-  return env
+  pure env
 
 -- 与えられた名前と引数の型を持つ関数が存在するか？
 funExists :: (Show a) => String -> RecList String -> GeneralEnv a -> IO Bool
 funExists name types env = do
   fun <- lookupFun name types env True
   case fun of
-    Nothing   -> return $ False
-    Just expr -> return $ True
+    Nothing   -> pure $ False
+    Just expr -> pure $ True
 
 
 -- 与えられた名前と引数の型を持つ関数を探す
 lookupFun :: (Show a) => String -> RecList String -> GeneralEnv a -> Bool -> IO (Maybe a)
 lookupFun name types env strict = do
-  --trace ("lookupFun: name=" ++ name) $ return True
+  --trace ("lookupFun: name=" ++ name) $ pure True
   env' <- readIORef env
-  return $ do
+  pure $ do
     funs <- Map.lookup name env'
     if hasVariable types
       then lastMatch (generalizeTypesWith "x" types) funs strict
@@ -97,33 +97,33 @@ insertVar name expr env = do
   e <- varExists name env
   if not e
     then insertVarForce name expr env
-    else return $ Left ("variable '" ++ name ++ "' already exists")
+    else pure $ Left ("variable '" ++ name ++ "' already exists")
 
 -- 変数を環境に強制的に登録する
 insertVarForce :: String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
 insertVarForce name expr env = do
   env' <- readIORef env
   funs' <- case Map.lookup name env' of
-    Nothing   -> return []
-    Just funs -> return funs
+    Nothing   -> pure []
+    Just funs -> pure funs
   writeIORef env (Map.insert name ([(Elem "_", expr)] ++ funs') env')
-  return $ Right env
+  pure $ Right env
 
 -- 与えられた名前を持つ変数が存在するか？
 varExists :: (Show a) => String -> GeneralEnv a -> IO Bool
 varExists name env = do
   exists <- lookupVar name env
   case exists of
-    Nothing   -> return False
-    otherwise -> return True
+    Nothing   -> pure False
+    otherwise -> pure True
 
 -- 与えられた名前の変数、または関数が存在するか？
 anyExists :: String -> GeneralEnv a -> IO Bool
 anyExists name env = do
   env' <- readIORef env
   case Map.lookup name env' of
-    Nothing   -> return False
-    Just vars -> return True
+    Nothing   -> pure False
+    Just vars -> pure True
 
 -- 環境の中身を表示する
 showEnv :: (Show a) => GeneralEnv a -> IO ()

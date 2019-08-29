@@ -25,7 +25,7 @@ parseProgram program = parse topLevel "<stdin>" program
 parseString :: String -> IOThrowsError Expr
 parseString program = case parseProgram program of
   Left bundle -> throwError $ errorBundlePretty bundle
-  Right expr  -> return expr
+  Right expr  -> pure expr
 
 -- REPLを実行する
 repl :: IO ()
@@ -48,7 +48,7 @@ until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do
  result <- prompt
  if pred result
-    then return ()
+    then pure ()
     else action result >> until_ pred prompt action
 
 -- プロンプトを出しつつ、標準入力から一行を取得する
@@ -92,7 +92,7 @@ execRun ["run", "limited", microSec, filename] = do
         evalWithPrimitiveEnv expr
     case result of
       Just (Left error) -> putStrLn error
-      Just (Right expr) -> return ()
+      Just (Right expr) -> pure ()
       Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
         ++ show ((read microSec :: Float)/10^6)
         ++ " sec)"
@@ -105,7 +105,7 @@ execRun ["run", filename] = do
       evalWithPrimitiveEnv expr
     case result of
       Left error -> putStrLn error
-      Right expr -> return ()
+      Right expr -> pure ()
 execRun ["run"] = putStrLn $ "mud run: run Mud program\n"
   ++ "\n"
   ++ "Usage:\n"
@@ -126,7 +126,7 @@ execEval ["eval", "silent", "limited", microSec, program] = do
       evalWithPrimitiveEnv expr
   case result of
     Just (Left error) -> putStrLn error
-    Just (Right expr) -> return ()
+    Just (Right expr) -> pure ()
     Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
      ++ show ((read microSec :: Float)/10^6)
      ++ " sec)"
@@ -156,8 +156,8 @@ te program = do
     expr <- parseString program
     typeEvalWithPrimitiveEnv expr
   case output of
-    Left error -> return $ error
-    Right expr -> return $ show expr
+    Left error -> pure $ error
+    Right expr -> pure $ show expr
 
 -- ファイルからプログラムを読んでパースして、型評価する
 tef :: String -> IO ()
@@ -174,8 +174,8 @@ ev program = do
     typeEvalWithPrimitiveEnv expr
     evalWithPrimitiveEnv expr
   case output of
-    Left error -> return $ error
-    Right expr -> return $ show expr
+    Left error -> pure $ error
+    Right expr -> pure $ show expr
 
 -- ファイルからプログラムを読んでパースして評価して結果を表示する
 evf :: String -> IO ()
