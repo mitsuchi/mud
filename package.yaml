@@ -28,6 +28,7 @@ dependencies:
 - HUnit
 - test-framework
 - test-framework-hunit
+- safe
 
 library:
   source-dirs: src

@@ -69,11 +69,11 @@ identifier' = do
 
 -- 与えられた文字列を読む。後ろの空白（改行を含む）をスキップする。
 symbol :: String -> Parser String
-symbol s = (L.symbol scn s)
+symbol s = L.symbol scn s
 
 -- 与えられた文字列を読む。後ろの空白（改行を含まない）をスキップする。
 symboln :: String -> Parser String
-symboln s = (L.symbol sc s)
+symboln s = L.symbol sc s
 
 -- 演算子とその処理。リストの先頭のほうが優先順位が高い。
 ops :: [[Operator Parser Expr]]

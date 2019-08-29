@@ -29,7 +29,7 @@ parseString program = case parseProgram program of
 
 -- REPLを実行する
 repl :: IO ()
-repl = do
+repl =
   newIORef Map.empty >>= insertPrimitives >>= until_ (== "quit") (readPrompt "> ") . typeCheckAndEvalAndPrint
 
 -- 与えられた環境とプログラム文字列をもとに、型評価して評価して結果を表示する
@@ -41,7 +41,7 @@ typeCheckAndEvalAndPrint env program = do
     eval expr env
   case output of
     Left error -> putStrLn error
-    Right expr -> putStrLn $ show expr
+    Right expr -> print expr
 
 -- 条件が成り立つまでモナドアクションを繰り返す
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
@@ -75,38 +75,15 @@ help = putStrLn $ "Mud is a functional programming language that supports multip
 
 -- パースを実行する
 execParse :: [String] -> IO ()
-execParse ["parse", program] =
-  case parseProgram program of
-    Left bundle -> putStrLn (errorBundlePretty bundle)
-    Right expr  -> putStrLn (show expr)
+execParse programs =
+  (\program ->
+     case parseProgram program of
+       Left bundle -> putStrLn (errorBundlePretty bundle)
+       Right expr  -> print expr) `mapM_` programs
 
 -- プログラムをファイルから読み、型評価し、評価する
 execRun :: [String] -> IO ()
-execRun ["run", "limited", microSec, filename] = do
-  withFile filename ReadMode $ \handle -> do
-    program <- hGetContents handle
-    result <- timeout (read microSec :: Int) $ do
-      runExceptT $ do
-        expr <- parseString program
-        typeEvalWithPrimitiveEnv expr
-        evalWithPrimitiveEnv expr
-    case result of
-      Just (Left error) -> putStrLn error
-      Just (Right expr) -> pure ()
-      Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
-        ++ show ((read microSec :: Float)/10^6)
-        ++ " sec)"
-execRun ["run", filename] = do
-  withFile filename ReadMode $ \handle -> do
-    program <- hGetContents handle
-    result <- runExceptT $ do
-      expr <- parseString program
-      typeEvalWithPrimitiveEnv expr
-      evalWithPrimitiveEnv expr
-    case result of
-      Left error -> putStrLn error
-      Right expr -> pure ()
-execRun ["run"] = putStrLn $ "mud run: run Mud program\n"
+execRun [] = putStrLn $ "mud run: run Mud program\n"
   ++ "\n"
   ++ "Usage:\n"
   ++ "\n"
@@ -115,25 +92,34 @@ execRun ["run"] = putStrLn $ "mud run: run Mud program\n"
   ++ "Examples:\n"
   ++ "\n"
   ++ "         mud run example.mu\n"
-
--- プログラム文字列を型評価し、評価し、結果を表示する
-execEval :: [String] -> IO ()
-execEval ["eval", "silent", "limited", microSec, program] = do
-  result <- timeout (read microSec :: Int) $ do
+execRun ["limited", microSec, filename] =
+  withFile filename ReadMode $ \handle -> do
+  program <- hGetContents handle
+  result  <- timeout (read microSec :: Int) $
     runExceptT $ do
-      expr <- parseString program
-      typeEvalWithPrimitiveEnv expr
-      evalWithPrimitiveEnv expr
+    expr  <- parseString program
+    _     <- typeEvalWithPrimitiveEnv expr
+    evalWithPrimitiveEnv expr
   case result of
     Just (Left error) -> putStrLn error
     Just (Right expr) -> pure ()
     Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
-     ++ show ((read microSec :: Float)/10^6)
-     ++ " sec)"
-execEval ["eval", program] = do
-  output <- ev program
-  putStrLn output
-execEval ["eval"] = putStrLn $ "mud eval: run one-liner program\n"
+      ++ show ((read microSec :: Float)/10^6)
+      ++ " sec)"
+execRun [filename] =
+  withFile filename ReadMode $ \handle -> do
+  program <- hGetContents handle
+  result <- runExceptT $ do
+    expr <- parseString program
+    typeEvalWithPrimitiveEnv expr
+    evalWithPrimitiveEnv expr
+  case result of
+    Left error -> putStrLn error
+    Right expr -> pure ()
+
+-- プログラム文字列を型評価し、評価し、結果を表示する
+execEval :: [String] -> IO ()
+execEval [] = putStrLn $ "mud eval: run one-liner program\n"
   ++ "\n"
   ++ "Usage:\n"
   ++ "\n"
@@ -142,6 +128,21 @@ execEval ["eval"] = putStrLn $ "mud eval: run one-liner program\n"
   ++ "Examples:\n"
   ++ "\n"
   ++ "         mud eval \"a=1;b=2;a+b\"\n"
+execEval ["silent", "limited", microSec, program] = do
+  result <- timeout (read microSec :: Int) $
+    runExceptT $ do
+    expr <- parseString program
+    typeEvalWithPrimitiveEnv expr
+    evalWithPrimitiveEnv expr
+  case result of
+    Just (Left error) -> putStrLn error
+    Just (Right expr) -> pure ()
+    Nothing      -> putStrLn $ "runtime error: time limit exceeded ("
+     ++ show ((read microSec :: Float)/10^6)
+     ++ " sec)"
+execEval programs = do
+  output <- ev `mapM` programs
+  putStrLn `mapM_` output
 
 -- 以下は開発用のショートカット
 
@@ -149,17 +150,17 @@ execEval ["eval"] = putStrLn $ "mud eval: run one-liner program\n"
 pa :: String -> Either (ParseErrorBundle String Void) Expr
 pa program = parse topLevel "<stdin>" program
 
--- プログラムの文字列をパースして型評価する
+-- プログラムの文字列をパースして型評価する
 te :: String -> IO String
 te program = do
   output <- runExceptT $ do
     expr <- parseString program
     typeEvalWithPrimitiveEnv expr
   case output of
-    Left error -> pure $ error
+    Left error -> pure error
     Right expr -> pure $ show expr
 
--- ファイルからプログラムを読んでパースして、型評価する
+-- ファイルからプログラムを読んでパースして、型評価する
 tef :: String -> IO ()
 tef file = do
   program <- readFile file
@@ -174,7 +175,7 @@ ev program = do
     typeEvalWithPrimitiveEnv expr
     evalWithPrimitiveEnv expr
   case output of
-    Left error -> pure $ error
+    Left error -> pure error
     Right expr -> pure $ show expr
 
 -- ファイルからプログラムを読んでパースして評価して結果を表示する
