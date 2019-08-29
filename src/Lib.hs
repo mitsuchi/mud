@@ -2,9 +2,11 @@
 module Lib where
 
 import           Control.Monad.Except
+import qualified Control.Monad.Trans      as Trans
 import           Data.IORef
-import           Data.Map             as Map hiding (foldr, take)
+import           Data.Map                 as Map hiding (foldr, take)
 import           Data.Void
+import qualified System.Console.Haskeline as Hline
 import           System.IO
 import           System.Timeout
 import           Text.Megaparsec
@@ -29,8 +31,20 @@ parseString program = case parseProgram program of
 
 -- REPLを実行する
 repl :: IO ()
-repl =
-  newIORef Map.empty >>= insertPrimitives >>= until_ (== "quit") (readPrompt "> ") . typeCheckAndEvalAndPrint
+repl = Hline.runInputT Hline.defaultSettings $ do
+  ref <- Trans.liftIO (newIORef Map.empty)
+  env <- Trans.liftIO $ insertPrimitives ref
+  loop env
+  where
+    loop :: Env -> Hline.InputT IO ()
+    loop env  = do
+      mayInput <- Hline.getInputLine "Mud>> "
+      case mayInput of
+        Nothing -> Hline.outputStrLn "Goodbye."
+        Just input -> do
+          Trans.liftIO $ typeCheckAndEvalAndPrint env input
+          loop env
+      -- until_ (== "quit") (readPrompt "> ") $ typeCheckAndEvalAndPrint env
 
 -- 与えられた環境とプログラム文字列をもとに、型評価して評価して結果を表示する
 typeCheckAndEvalAndPrint :: Env -> String -> IO ()

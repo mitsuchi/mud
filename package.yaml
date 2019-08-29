@@ -29,7 +29,8 @@ dependencies:
 - test-framework
 - test-framework-hunit
 - safe
-
+- haskeline
+  
 library:
   source-dirs: src
 
