@@ -1,16 +1,16 @@
 module Main where
 
-import System.Environment (getArgs)
-import System.IO
-import Lib
+import           Lib
+import qualified Safe
+import           System.Environment (getArgs)
+import           System.IO
 
 main :: IO ()
 main = do
   args <- getArgs
-  if args == [] then help
-    else case args !! 0 of 
-      "eval" -> execEval args
-      "parse" -> execParse args
-      "run"  -> execRun args
-      "repl" -> repl
-      _      -> help
+  case Safe.atDef "help" args 0 of
+    "eval"  -> execEval  (drop 1 args)
+    "parse" -> execParse (drop 1 args)
+    "run"   -> execRun   (drop 1 args)
+    "repl"  -> repl
+    _       -> help
