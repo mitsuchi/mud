@@ -1,10 +1,10 @@
 module Main where
 
-import qualified Lib as Lib
-import qualified Test.Framework as Test
+import qualified Lib
+import           System.IO.Unsafe
+import qualified Test.Framework                 as Test
 import qualified Test.Framework.Providers.HUnit as Test
-import Test.HUnit
-import System.IO.Unsafe
+import           Test.HUnit
 
 main :: IO ()
 main = do

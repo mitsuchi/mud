@@ -30,7 +30,7 @@ parseString program = case parseProgram program of
 -- REPLを実行する
 repl :: IO ()
 repl = do
-  (newIORef Map.empty) >>= insertPrimitives >>= until_ (== "quit") (readPrompt "> ") . typeCheckAndEvalAndPrint
+  newIORef Map.empty >>= insertPrimitives >>= until_ (== "quit") (readPrompt "> ") . typeCheckAndEvalAndPrint
 
 -- 与えられた環境とプログラム文字列をもとに、型評価して評価して結果を表示する
 typeCheckAndEvalAndPrint :: Env -> String -> IO ()

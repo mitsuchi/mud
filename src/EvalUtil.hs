@@ -32,4 +32,3 @@ findM p (x:xs) = ifM (p x) (pure $ Just x) (findM p xs)
 -- if のモナド版
 ifM :: Monad m => m Bool -> m a -> m a -> m a
 ifM b t f = do b <- b; if b then t else f
-
