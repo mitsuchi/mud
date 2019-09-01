@@ -125,7 +125,7 @@ matchCond (ListLit l1 _:e1s) (ListLit [Var h _, Var t _] _:e2s) guard varMap env
 matchCond (ListLit l1 _:e1s) (ListLit l2 _:e2s) guard varMap env =
   if l1 == l2 then matchCond e1s e2s guard varMap env else pure False
 matchCond (e0:e1s) (Var v _:e2s) guard varMap env =
-  case Map.lookup v varMap of
+  case varMap !? v of
     Nothing -> matchCond e1s e2s guard (Map.insert v e0 varMap) env
     Just e  -> if e == e0
       then matchCond e1s e2s guard varMap env

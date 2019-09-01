@@ -36,7 +36,7 @@ typeEval (ListLit es c) env = do
   if allTheSame es'
     then pure $ Elems [Elem "List", head es']
     else throwError $ show (lineOfCode c) ++ ":type mismatch. list can't contain different type of elements."
-typeEval (StructValue s) env = case Map.lookup "type" s of
+typeEval (StructValue s) env = case s !? "type" of
   Just (StrLit str) -> pure $ Elem str
   Nothing           -> error "type not defined in struct value"
 typeEval (Seq [e]) env = typeEval e env
@@ -222,7 +222,7 @@ allTheSame (e:es) = e == head es && allTheSame es
 matchCondType :: [RecList Type] -> [Expr] -> Maybe Expr -> Map.Map String (RecList Type) -> Env -> IO (Bool, Map.Map String (RecList Type))
 matchCondType (e1:e1s) (Var v _:e2s) guard varMap env =
   -- マッチ式に変数がくる場合：変数に対する型の既存の割り当てと矛盾しなければマッチ
-  case Map.lookup v varMap of
+  case varMap !? v of
     Nothing   -> matchCondType e1s e2s guard (Map.insert v e1 varMap) env
     Just types -> if types == e1
       then matchCondType e1s e2s guard varMap env

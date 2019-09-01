@@ -21,7 +21,7 @@ call "puts" [e] env _ = do
 call "makeStruct" (name:args) env _ =
   lift $ makeStruct args (Map.fromList [("type", name)]) env
 call "lookupStruct" [StructValue structValue, StrLit member] env _ =
-  case Map.lookup member structValue of
+  case structValue !? member of
     Just expr -> pure expr
     Nothing   -> throwError ("can't find struct member '" ++ member ++ "'")
 call "to_s" [IntLit i] env _ = pure $ StrLit (show i)
@@ -30,7 +30,7 @@ call "to_s" [ListLit l _] env _ = pure $ StrLit (show l)
 call "to_s" [BoolLit b] env _ = pure $ StrLit (show b)
 call "debug" [StrLit "env", StrLit s] env _ = do
   env' <- liftIO $ readIORef env
-  case Map.lookup s env' of
+  case env' !? s of
     Just es -> lift $ print es
     Nothing -> lift $ putStrLn ("'"  ++ s ++ "' not found")
   pure (StrLit s)

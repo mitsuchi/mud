@@ -83,7 +83,7 @@ instance Show Expr where
   show (Case exprs matches types) = "(Case " ++ show matches ++ ")"
   show (TypeDef (Var name _) types) = "(TypeDef " ++ name ++ " " ++ show types ++ ")"
   show (StructType types) = "(StructType " ++ show types ++ ")"
-  show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ Map.lookup "type" sv)) sv
+  show (StructValue sv) = Map.foldrWithKey f (show (fromJust $ sv !? "type")) sv
     where f k a result = if k == "type" then result else result ++ " " ++ k ++ ":" ++ show a
   show (Call name _) = "(Call " ++ name ++ ")"
   show (TypeLit types) = "(TypeLit " ++ rArrow types ++ ")"
@@ -104,7 +104,7 @@ typeOf' (TypeSig sig _) = sig
 typeOf' (Fun sig _ _ _) = sig
 typeOf' (ListLit (e:es) _) = Elems [Elem "List", typeOf' e]
 typeOf' (ListLit [] _) = Elems [Elem "List", Elem "a"]
-typeOf' (StructValue s) = case Map.lookup "type" s of
+typeOf' (StructValue s) = case s !? "type" of
   Just (StrLit str) -> Elem str
   Nothing           -> error "type not defined in struct value"
 

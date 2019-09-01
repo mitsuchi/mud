@@ -23,12 +23,12 @@ lookupVar' :: (Show a) => String -> GeneralEnv a -> Bool -> IO (Maybe a)
 lookupVar' name env loose = do
   env' <- readIORef env
   pure $ do
-    vars <- Map.lookup name env'
+    vars <- env' !? name
     case vars of
       -- 同じ名前の定義の先頭に変数があればそれを参照する
       (Elem "_", expr):es -> Just expr
       -- 変数として名前がなくても関数として1つだけ名前があるならそれを参照する
-      [(Elems _, expr)]  -> if loose then Just expr else Nothing
+      [(Elems _, expr)]   -> if loose then Just expr else Nothing
       -- そうでなければなし
       otherwise           -> Nothing
 
@@ -48,7 +48,7 @@ insertFun name types expr env = do
 insertFun' :: String -> RecList String -> a -> GeneralEnv a -> IO (GeneralEnv a)
 insertFun' name types expr env = do
   env' <- readIORef env
-  funs' <- case Map.lookup name env' of
+  funs' <- case env' !? name of
     Nothing   -> pure []
     Just funs -> pure funs
   let generalizedTypes = generalizeTypes types
@@ -70,7 +70,7 @@ lookupFun name types env strict = do
   --trace ("lookupFun: name=" ++ name) $ pure True
   env' <- readIORef env
   pure $ do
-    funs <- Map.lookup name env'
+    funs <- env' !? name
     if hasVariable types
       then lastMatch (generalizeTypesWith "x" types) funs strict
       else firstMatch (generalizeTypesWith "x" types) funs strict
@@ -103,7 +103,7 @@ insertVar name expr env = do
 insertVarForce :: String -> a -> GeneralEnv a -> IO (Either String (GeneralEnv a))
 insertVarForce name expr env = do
   env' <- readIORef env
-  funs' <- case Map.lookup name env' of
+  funs' <- case env' !? name of
     Nothing   -> pure []
     Just funs -> pure funs
   writeIORef env (Map.insert name ((Elem "_", expr) : funs') env')
@@ -121,7 +121,7 @@ varExists name env = do
 anyExists :: String -> GeneralEnv a -> IO Bool
 anyExists name env = do
   env' <- readIORef env
-  case Map.lookup name env' of
+  case env' !? name of
     Nothing   -> pure False
     Just vars -> pure True
 
