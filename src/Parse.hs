@@ -175,8 +175,7 @@ listLit = do
   symbol "["
   exprs <- sepBy expr (symbol "," <|> symbol ";")
   symboln "]"
-  code <- getCode
-  pure $ ListLit exprs code
+  ListLit exprs <$> getCode
 
 -- カッコ式（カッコの中に式が一つだけある式）を読む
 parenExpr :: Parser Expr
@@ -232,7 +231,7 @@ memberWithType = do
   member <- identifier
   symbol ":"
   types <- typeList
-  pure $ (member, types)
+  pure (member, types)
 
 -- 関数定義を読む
 fundef :: Parser Expr
@@ -268,7 +267,7 @@ funDefCase = do
   pure $ FunDef nameExpr types (paramList (paramNum matches)) (Case (varList (paramNum matches)) matches types)
     where
       paramNum matches = length (fst4 (head matches))
-      paramList n = zipWith (++) (take n (repeat "x")) (map show (take n [1..]))
+      paramList n = zipWith (++) (replicate n "x") (map show (take n [1..]))
       varList n = map (\v -> Var v (Code { lineOfCode = 1 })) (paramList n)
       fst4 (a,b,c,d) = a
 
@@ -306,7 +305,7 @@ apply = do
 typeList :: Parser (RecList String)
 typeList = do
   term1 <- typeTerm
-  terms <- many $ (symbol "->") *> typeTerm
+  terms <- many $ symbol "->" *> typeTerm
   pure $ Elems (term1 : terms)
 
 -- 型を表す項を読む。Int, a, [Double], (Int->String) など。

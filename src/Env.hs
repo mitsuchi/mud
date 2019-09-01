@@ -28,7 +28,7 @@ lookupVar' name env loose = do
       -- 同じ名前の定義の先頭に変数があればそれを参照する
       (Elem "_", expr):es -> Just expr
       -- 変数として名前がなくても関数として1つだけ名前があるならそれを参照する
-      (Elems _, expr):[]  -> if loose then Just expr else Nothing
+      [(Elems _, expr)]  -> if loose then Just expr else Nothing
       -- そうでなければなし
       otherwise           -> Nothing
 
@@ -51,8 +51,8 @@ insertFun' name types expr env = do
   funs' <- case Map.lookup name env' of
     Nothing   -> pure []
     Just funs -> pure funs
-  generalizedTypes <- pure $ generalizeTypes types
-  writeIORef env (Map.insert name (if types == generalizedTypes then [(generalizedTypes, expr)] ++ funs' else funs' ++ [(generalizedTypes, expr)]) env')
+  let generalizedTypes = generalizeTypes types
+  writeIORef env (Map.insert name (if types == generalizedTypes then(generalizedTypes, expr) : funs' else funs' ++ [(generalizedTypes, expr)]) env')
   pure env
 
 -- 与えられた名前と引数の型を持つ関数が存在するか？
@@ -60,8 +60,8 @@ funExists :: (Show a) => String -> RecList String -> GeneralEnv a -> IO Bool
 funExists name types env = do
   fun <- lookupFun name types env True
   case fun of
-    Nothing   -> pure $ False
-    Just expr -> pure $ True
+    Nothing   -> pure False
+    Just expr -> pure True
 
 
 -- 与えられた名前と引数の型を持つ関数を探す
@@ -106,7 +106,7 @@ insertVarForce name expr env = do
   funs' <- case Map.lookup name env' of
     Nothing   -> pure []
     Just funs -> pure funs
-  writeIORef env (Map.insert name ([(Elem "_", expr)] ++ funs') env')
+  writeIORef env (Map.insert name ((Elem "_", expr) : funs') env')
   pure $ Right env
 
 -- 与えられた名前を持つ変数が存在するか？
