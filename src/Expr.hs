@@ -71,7 +71,7 @@ instance Show Expr where
   show (Neg e) = "-" ++ show e
   show (Var name _) = name
   show (BinOp op _ e1 e2) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
-  show (Seq exprs) = concatMap (++ ";").show exprs
+  show (Seq exprs) = concatMap ((++ ";") . show) exprs
   show (Fun types params body env) = "function : " ++ rArrow types
   show (FunDef (Var name _) types params body) = "(Fun (" ++ name ++ ") " ++ show body ++ ")"
   show (FunDefAnon types params body code) = "(anon fun : " ++ rArrow types ++ ", body: " ++ show body ++ ")"

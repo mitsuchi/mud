@@ -6,7 +6,9 @@ import           Control.Monad.Except
 import           Data.Char
 import           Data.IORef
 import           Data.List            (find, intercalate)
+import           Data.Map             ((!?))
 import qualified Data.Map             as Map hiding (foldr, take)
+import           Data.Maybe
 import           Debug.Trace
 
 import           Env
@@ -88,7 +90,7 @@ typeEval (Apply (Var name code) args) env = do
          ++ " -> ?' not found"
   let ts = generalizeTypesWith "t" types
   let xs = generalizeTypesWith "x" (Elems args')
-  case unify (rInit ts) xs Map.empty of
+  case unify (rInit ts) xs mempty of
     Nothing -> throwError $
                show (lineOfCode code)
                ++ "ts:" ++ show ts
@@ -103,7 +105,7 @@ typeEval (Apply (TypeLit types) args) env = do
   args' <- mapM (`typeEval` env) args
   let ts = generalizeTypesWith "t" types
       xs = generalizeTypesWith "x" (Elems args')
-  case unify (rInit ts) xs Map.empty of
+  case unify (rInit ts) xs mempty of
     Nothing -> throwError $ "type mismatch. function has type : " ++ argSig types ++ ", but actual args are : " ++ intercalate " -> " (map rArrow args')
     Just typeEnv -> let env1 = (`typeInst` typeEnv) <$> typeEnv
       in pure $ typeInst (rLast ts) $ Map.mapWithKey (\k e -> cancelXs k e env1) env1
@@ -136,7 +138,7 @@ typeEval (FunDef nameExpr@(Var name code) types params body) env = do
   -- 関数が再帰的に定義される可能性があるので、いま定義しようとしてる関数を先に型環境に登録しちゃう
   res <- liftIO $ insertFun name types (Fun types params body env) env'
   body' <- typeEval body env'
-  case unify types (rAppend (rInit types) (Elems [body'])) Map.empty of
+  case unify types (rAppend (rInit types) (Elems [body'])) mempty of
     Just env0 -> typeEval (Assign nameExpr (Fun types params body env)) env
     Nothing -> throwError $
                show (lineOfCode code)
@@ -150,7 +152,7 @@ typeEval (FunDefAnon types params body code) env = do
   env' <- liftIO $ newEnv params (map TypeLit (rArgs (generalizeTypes types))) varMap
   varMap' <- liftIO $ readIORef env'
   body' <- typeEval body env'
-  case unify types (rAppend (rInit types) (Elems [body'])) Map.empty of
+  case unify types (rAppend (rInit types) (Elems [body'])) mempty of
     Just env0 -> pure $ generalizeTypes types
     Nothing -> throwError $
                show (lineOfCode code)
@@ -160,7 +162,7 @@ typeEval (FunDefAnon types params body code) env = do
                ++ rArrow body' ++ "'"
 typeEval (Case es [(args, body, guard, code)] (Elems types')) env = do
   (Elems types) <- pure $ generalizeTypes (Elems types')
-  (bool, typeEnv) <- liftIO $ matchCondType (init types) args guard Map.empty env
+  (bool, typeEnv) <- liftIO $ matchCondType (init types) args guard mempty env
   bodyType <- typeEvalMatchExprBody body typeEnv env
   case unify (last types) bodyType typeEnv of
     Just env0 -> pure $ last types
@@ -184,7 +186,7 @@ typeEval e env = trace ("runtime error: typeEval failed. " ++ show e) $ pure (El
 -- プリミティブな環境で、与えられた式の型を評価する
 typeEvalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
 typeEvalWithPrimitiveEnv expr = do
-  env <- liftIO $ newIORef Map.empty
+  env <- liftIO $ newIORef mempty
   liftIO $ insertPrimitives env
   expr' <- typeEval expr env
   pure $ TypeLit expr'
@@ -212,8 +214,8 @@ typeEvalMatchExprBody body typeEnv env = do
 
 -- リストの要素がすべて同一か？
 allTheSame :: (Eq a) => [a] -> Bool
-allTheSame [] = True
-allTheSame [e] = True
+allTheSame []     = True
+allTheSame [e]    = True
 allTheSame (e:es) = e == head es && allTheSame es
 
 -- マッチ式の引数の列が、与えられた型の列(マッチ式を含む関数の型)とマッチするか？
@@ -224,19 +226,19 @@ matchCondType (e1:e1s) (Var v _:e2s) guard varMap env =
     Nothing   -> matchCondType e1s e2s guard (Map.insert v e1 varMap) env
     Just types -> if types == e1
       then matchCondType e1s e2s guard varMap env
-      else pure (False, Map.empty)
+      else pure (False, mempty)
 matchCondType (listType@(Elems [Elem "List", Elem a]):e1s) (ListLit [Var e _, Var es _] _:e2s) guard varMap env = do
   -- マッチ式にリスト([e;es])がくる場合
   -- 対応する引数の型もリストであることが必要
   -- それを [a] とすると、e:a, es:[a] を型環境に割り当てる
   let vmap1 = Map.insert e (Elem a) varMap
-      vmap2 = pure $ Map.insert es listType vmap1
+      vmap2 = Map.insert es listType vmap1
   matchCondType e1s e2s guard vmap2 env
 matchCondType (e1:e1s) (e2:e2s) guard varMap env =
   -- 一般の場合：型としてマッチすればOK (Int vs Int, a vs String など)
   case unify e1 (typeOf' e2) varMap of
     Just varMap' -> matchCondType e1s e2s guard varMap' env
-    Nothing      -> pure (False, Map.empty)
+    Nothing      -> pure (False, mempty)
 matchCondType [] [] guard varMap env = case guard of
   Nothing -> pure (True, varMap)
   Just guard' -> do
@@ -248,9 +250,9 @@ matchCondType [] [] guard varMap env = case guard of
     case guardBodyType of
       Right val -> if val == Elem "Bool"
         then pure (True, varMap)
-        else pure (False, Map.empty)
-      Left error -> trace error $ pure (False, Map.empty)
-matchCondType e1 e2 _ varMap env = trace ("matchCondType: " ++ show (e1,e2)) $ pure (False, Map.empty)
+        else pure (False, mempty)
+      Left error -> trace error $ pure (False, mempty)
+matchCondType e1 e2 _ varMap env = trace ("matchCondType: " ++ show (e1,e2)) $ pure (False, mempty)
 
 -- 型もしくは型変数を、型環境を元にインスタンス化する
 typeInst :: RecList Type -> Map.Map String (RecList Type) -> RecList Type

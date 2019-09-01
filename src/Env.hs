@@ -81,7 +81,7 @@ firstMatch types [] strict = Nothing
 firstMatch types ((types', expr):es) strict =
   if strict
     then if types' == types then Just expr else firstMatch types es strict
-    else case unify (rInit types') types Map.empty of
+    else case unify (rInit types') types mempty of
       Nothing  -> firstMatch types es strict
       Just env -> Just expr
 

@@ -78,7 +78,7 @@ eval (Apply expr args) env = do
   eval (Apply expr' args') env
 eval (Case es matchExprs types) env = do
   es' <- mapM (`eval` env) es
-  pair' <- lift $ findM (\(args, body, guard, code) -> matchCond es' args guard Map.empty env) matchExprs
+  pair' <- lift $ findM (\(args, body, guard, code) -> matchCond es' args guard mempty env) matchExprs
   case pair' of
     Just (args, body, guard, code) -> let (params, args') = paramsAndArgs args es'
                  in eval (Apply (Fun types params body env) args') env
@@ -108,7 +108,7 @@ eval value@(StructValue structValue) env = pure value
 -- プリミティブな関数だけを登録した環境で式を評価する
 evalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
 evalWithPrimitiveEnv expr = do
-  env <- liftIO $ newIORef Map.empty
+  env <- liftIO $ newIORef mempty
   liftIO $ insertPrimitives env
   eval expr env
 
