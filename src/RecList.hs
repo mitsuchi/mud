@@ -29,7 +29,7 @@ rShow (Elems xs) = "[" ++ intercalate "," (map rShow xs) ++ "]"
 -- 例：[Int,[Int, String]] -> Int -> (Int->String)
 argSig :: RecList String -> String
 argSig (Elem x)   = x
-argSig (Elems xs) = (intercalate " -> " (map rArrow (init xs))) ++ " -> ?"
+argSig (Elems xs) = intercalate " -> " (map rArrow (init xs)) ++ " -> ?"
 
 -- 型の表記として表示
 -- 例：[Int,[Int, String]] -> (Int -> (Int->String))
@@ -48,7 +48,7 @@ listify (Elems xs) = map rArrow xs
 -- 例：[a,[b,c]] `rAppend` [d] -> [a,[b,c],d]
 rAppend :: RecList a -> RecList a -> RecList a
 rAppend (Elem e) (Elems [])     = Elems [Elem e]
-rAppend (Elem e) (Elems es)     = Elems ((Elem e):es)
+rAppend (Elem e) (Elems es)     = Elems (Elem e:es)
 rAppend (Elems es1) (Elems es2) = Elems (es1++es2)
 
 -- フラットなリストに戻す
@@ -56,11 +56,11 @@ rAppend (Elems es1) (Elems es2) = Elems (es1++es2)
 rFlatten :: RecList a -> [a]
 rFlatten (Elem e)       = [e]
 rFlatten (Elems [])     = []
-rFlatten (Elems (e:es)) = (rFlatten e) ++ (rFlatten (Elems es))
+rFlatten (Elems (e:es)) = rFlatten e ++ rFlatten (Elems es)
 
 -- 対応するそれぞれの要素がすべて等しいなら、再帰的なリスト全体が等しい
 instance (Eq a) => Eq (RecList a) where
-  (Elem x) == (Elem y) = (x == y)
+  (Elem x) == (Elem y) = x == y
   (Elem x) == (Elems y) = False
   (Elems x) == (Elem y) = False
-  (Elems x) == (Elems y) = (x == y)
+  (Elems x) == (Elems y) = x == y

@@ -16,12 +16,12 @@ call :: Name -> [Expr] -> Env -> Code -> ExceptT String IO Expr
 call "head" [ListLit (e:es) _] env _ = pure e
 call "tail" [ListLit (e:es) c] env _ = pure $ ListLit es c
 call "puts" [e] env _ = do
-  lift $ putStrLn (show e)
+  lift $ print e
   pure e
-call "makeStruct" (name:args) env _ = do
+call "makeStruct" (name:args) env _ =
   lift $ makeStruct args (Map.fromList [("type", name)]) env
-call "lookupStruct" [StructValue structValue, StrLit member] env _ = do
-  case Map.lookup member structValue of
+call "lookupStruct" [StructValue structValue, StrLit member] env _ =
+  case structValue !? member of
     Just expr -> pure expr
     Nothing   -> throwError ("can't find struct member '" ++ member ++ "'")
 call "to_s" [IntLit i] env _ = pure $ StrLit (show i)
@@ -30,8 +30,8 @@ call "to_s" [ListLit l _] env _ = pure $ StrLit (show l)
 call "to_s" [BoolLit b] env _ = pure $ StrLit (show b)
 call "debug" [StrLit "env", StrLit s] env _ = do
   env' <- liftIO $ readIORef env
-  case Map.lookup s env' of
-    Just es -> lift $ putStrLn (show es)
+  case env' !? s of
+    Just es -> lift $ print es
     Nothing -> lift $ putStrLn ("'"  ++ s ++ "' not found")
   pure (StrLit s)
 call "+" [IntLit i1, IntLit i2] env _ = pure $ IntLit (i1+i2)
@@ -47,7 +47,7 @@ call "-" [IntLit i1, DoubleLit f2] env _ = pure $ DoubleLit (fromIntegral i1 - f
 call "-" [DoubleLit f1, IntLit i2] env _ = pure $ DoubleLit (f1 - fromIntegral i2)
 call "*" [IntLit i1, IntLit i2] env _ = pure $ IntLit (i1*i2)
 call "*" [DoubleLit f1, DoubleLit f2] env _ = pure $ DoubleLit (f1*f2)
-call "*" [StrLit s, IntLit i] env _ = pure (StrLit $ (concatMap (\i -> s) [1..i]))
+call "*" [StrLit s, IntLit i] env _ = pure (StrLit (concatMap (const s) [1..i]))
 call "*" [BoolLit b1, BoolLit b2] env _ = pure $ BoolLit (b1 && b2)
 call "*" [IntLit i1, DoubleLit f2] env _ = pure $ DoubleLit (fromIntegral i1 * f2)
 call "*" [DoubleLit f1, IntLit i2] env _ = pure $ DoubleLit (f1* fromIntegral i2)
@@ -77,8 +77,8 @@ call ">=" [IntLit i1, DoubleLit i2] env _ = pure $ BoolLit (fromIntegral i1 >= i
 call ">=" [DoubleLit i1, IntLit i2] env _ = pure $ BoolLit (i1 >= fromIntegral i2)
 call "&&" [BoolLit b1, BoolLit b2] env _ = pure $ BoolLit (b1 && b2)
 call "||" [BoolLit b1, BoolLit b2] env _ = pure $ BoolLit (b1 || b2)
-call name args env c = do
-  throwError ((show $ lineOfCode c) ++ ":function '" ++ name ++ " : " ++ intercalate " -> " (map rArrow (map typeOf' args)) ++ " -> ?' not found")
+call name args env c =
+  throwError (show (lineOfCode c) ++ ":function '" ++ name ++ " : " ++ intercalate " -> " (map (rArrow . typeOf') args) ++ " -> ?' not found")
 
 -- ユーザー定義型を表す構造体を作る
 makeStruct :: [Expr] -> Map Name Expr -> Env -> IO Expr

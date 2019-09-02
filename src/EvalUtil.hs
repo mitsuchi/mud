@@ -8,11 +8,11 @@ import           Env
 import           Expr
 import           RecList
 
-　-- 与えられた環境をベースに、関数の仮引数に対して実引数を登録した環境を作る
-newEnv :: [String] -> [Expr] -> (Map String [(RecList String, Expr)]) -> IO Env
+ -- 与えられた環境をベースに、関数の仮引数に対して実引数を登録した環境を作る
+newEnv :: [String] -> [Expr] -> Map String [(RecList String, Expr)] -> IO Env
 newEnv params args outerEnv = do
     env <- newIORef outerEnv
-    mapM_ (\p -> insertAny p env) (zip params args)
+    mapM_ (`insertAny` env) (zip params args)
     pure env
 
 -- 環境に変数または関数を登録する

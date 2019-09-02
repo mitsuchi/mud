@@ -32,7 +32,7 @@ parseString program = case parseProgram program of
 -- REPLを実行する
 repl :: IO ()
 repl = Hline.runInputT Hline.defaultSettings $ do
-  ref <- Trans.liftIO (newIORef Map.empty)
+  ref <- Trans.liftIO (newIORef mempty)
   env <- Trans.liftIO $ insertPrimitives ref
   loop env
   where

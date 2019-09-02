@@ -78,7 +78,7 @@ eval (Apply expr args) env = do
   eval (Apply expr' args') env
 eval (Case es matchExprs types) env = do
   es' <- mapM (`eval` env) es
-  pair' <- lift $ findM (\(args, body, guard, code) -> matchCond es' args guard Map.empty env) matchExprs
+  pair' <- lift $ findM (\(args, body, guard, code) -> matchCond es' args guard mempty env) matchExprs
   case pair' of
     Just (args, body, guard, code) -> let (params, args') = paramsAndArgs args es'
                  in eval (Apply (Fun types params body env) args') env
@@ -108,7 +108,7 @@ eval value@(StructValue structValue) env = pure value
 -- プリミティブな関数だけを登録した環境で式を評価する
 evalWithPrimitiveEnv :: Expr -> IOThrowsError Expr
 evalWithPrimitiveEnv expr = do
-  env <- liftIO $ newIORef Map.empty
+  env <- liftIO $ newIORef mempty
   liftIO $ insertPrimitives env
   eval expr env
 
@@ -125,7 +125,7 @@ matchCond (ListLit l1 _:e1s) (ListLit [Var h _, Var t _] _:e2s) guard varMap env
 matchCond (ListLit l1 _:e1s) (ListLit l2 _:e2s) guard varMap env =
   if l1 == l2 then matchCond e1s e2s guard varMap env else pure False
 matchCond (e0:e1s) (Var v _:e2s) guard varMap env =
-  case Map.lookup v varMap of
+  case varMap !? v of
     Nothing -> matchCond e1s e2s guard (Map.insert v e0 varMap) env
     Just e  -> if e == e0
       then matchCond e1s e2s guard varMap env
